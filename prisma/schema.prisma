@@ -1,0 +1,509 @@
+// ============================================================================
+// AIRPORT GUIDE — DATABASE SCHEMA
+// Designed to scale to 10,000+ airports. PostgreSQL via Supabase.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ----------------------------------------------------------------------------
+// GEOGRAPHY
+// ----------------------------------------------------------------------------
+
+model Country {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  isoCode2  String   @unique // e.g. "GB"
+  isoCode3  String   @unique // e.g. "GBR"
+  region    String? // e.g. "Europe", "Middle East"
+  flagEmoji String?
+  metaTitle       String?
+  metaDescription String?
+  cities   City[]
+  airports Airport[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+model City {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  countryId String
+  country   Country  @relation(fields: [countryId], references: [id])
+  latitude  Float?
+  longitude Float?
+  metaTitle       String?
+  metaDescription String?
+  airports  Airport[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([countryId, name])
+  @@index([slug])
+}
+
+// ----------------------------------------------------------------------------
+// CORE AIRPORT ENTITY
+// ----------------------------------------------------------------------------
+
+enum AirportStatus {
+  PUBLISHED
+  DRAFT
+  NEEDS_REVIEW
+}
+
+model Airport {
+  id       String @id @default(cuid())
+  slug     String @unique // e.g. "london-heathrow-lhr"
+  name     String // "London Heathrow Airport"
+  iata     String @unique // "LHR"
+  icao     String @unique // "EGLL"
+
+  cityId    String
+  city      City    @relation(fields: [cityId], references: [id])
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id])
+
+  latitude  Float
+  longitude Float
+  elevationFt Int?
+  timezone  String // IANA tz, e.g. "Europe/London"
+
+  overview     String  @db.Text
+  history      String? @db.Text
+  descriptionShort String? // used in cards / meta
+
+  openedYear        Int?
+  runwayCount       Int?
+  runwayDetails     String? @db.Text
+  terminalCount     Int?
+  annualPassengers  Int? // most recent public figure
+  annualPassengersYear Int? // year that figure is from
+  websiteUrl        String?
+  phoneNumber       String?
+
+  heroImageUrl String?
+  status       AirportStatus @default(DRAFT)
+  dataVerifiedAt DateTime? // when core facts were last checked against an official source
+  sourceNotes  String? @db.Text // where facts were sourced from, for editorial trust
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  canonicalPath   String?
+
+  // Relations — one section per major guide feature
+  images            AirportImage[]
+  facts             AirportFact[]
+  terminals         Terminal[]
+  faqs              FAQ[]
+  amenities         Amenity[]
+  lounges           Lounge[]
+  hotels            NearbyHotel[]
+  transferOptions   TransferOption[]
+  parkingOptions    ParkingOption[]
+  transitVisaInfo   TransitVisaInfo?
+  layoverGuide      LayoverGuide?
+  emergencyContacts EmergencyContact[]
+  tips              AirportTip[]
+  accessibility     AccessibilityInfo?
+  petTravelInfo     PetTravelInfo?
+  customsInfo       CustomsInfo?
+  baggageRules      BaggageRules?
+  securityRules     SecurityRules?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([iata])
+  @@index([icao])
+  @@index([slug])
+  @@index([cityId])
+  @@index([countryId])
+  @@index([status])
+}
+
+model AirportImage {
+  id        String  @id @default(cuid())
+  airportId String
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String
+  caption   String?
+  credit    String? // photographer / source attribution
+  sortOrder Int     @default(0)
+
+  @@index([airportId])
+}
+
+// Freeform key/value facts block for quick-hit "Airport Facts" panels
+model AirportFact {
+  id        String  @id @default(cuid())
+  airportId String
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  label     String // "Passenger Traffic (2024)"
+  value     String // "83.9 million"
+  sortOrder Int     @default(0)
+
+  @@index([airportId])
+}
+
+// ----------------------------------------------------------------------------
+// TERMINALS
+// ----------------------------------------------------------------------------
+
+model Terminal {
+  id          String  @id @default(cuid())
+  airportId   String
+  airport     Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  code        String // "Terminal 5", "T2"
+  description String? @db.Text
+  mapImageUrl String?
+  checkInInfo String? @db.Text
+  immigrationInfo String? @db.Text
+  securityInfo    String? @db.Text
+
+  airlines    TerminalAirline[]
+  amenities   Amenity[]
+
+  @@unique([airportId, code])
+  @@index([airportId])
+}
+
+model Airline {
+  id       String @id @default(cuid())
+  name     String @unique
+  iataCode String? @unique
+  icaoCode String? @unique
+  logoUrl  String?
+  websiteUrl String?
+
+  terminals TerminalAirline[]
+  offices   AirlineOffice[]
+}
+
+model TerminalAirline {
+  id         String   @id @default(cuid())
+  terminalId String
+  terminal   Terminal @relation(fields: [terminalId], references: [id], onDelete: Cascade)
+  airlineId  String
+  airline    Airline  @relation(fields: [airlineId], references: [id])
+  checkInDesk String?
+
+  @@unique([terminalId, airlineId])
+  @@index([terminalId])
+}
+
+model AirlineOffice {
+  id        String  @id @default(cuid())
+  airlineId String
+  airline   Airline @relation(fields: [airlineId], references: [id], onDelete: Cascade)
+  airportId String
+  location  String
+  phone     String?
+  hours     String?
+
+  @@index([airlineId])
+  @@index([airportId])
+}
+
+// ----------------------------------------------------------------------------
+// AMENITIES (duty free, food, prayer rooms, medical, wifi, charging, etc.)
+// One flexible model + a category enum keeps this scalable across 10k airports
+// instead of one table per amenity type.
+// ----------------------------------------------------------------------------
+
+enum AmenityCategory {
+  DUTY_FREE
+  RESTAURANT
+  COFFEE_SHOP
+  FAST_FOOD
+  PRAYER_ROOM
+  SMOKING_AREA
+  BABY_CARE_ROOM
+  MEDICAL_FACILITY
+  PHARMACY
+  CHARGING_STATION
+  FREE_WIFI
+  SIM_CARD_COUNTER
+  CURRENCY_EXCHANGE
+  ATM
+  SLEEPING_AREA
+  CAPSULE_HOTEL
+  SHOWER
+  SHOP
+  PLAY_AREA
+}
+
+model Amenity {
+  id          String          @id @default(cuid())
+  airportId   String
+  airport     Airport         @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  terminalId  String?
+  terminal    Terminal?       @relation(fields: [terminalId], references: [id])
+  category    AmenityCategory
+  name        String
+  location    String? // e.g. "Airside, near Gate A12"
+  hours       String?
+  description String?         @db.Text
+  websiteUrl  String?
+
+  @@index([airportId, category])
+  @@index([terminalId])
+}
+
+model Lounge {
+  id          String  @id @default(cuid())
+  airportId   String
+  airport     Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  name        String
+  terminal    String?
+  operator    String? // "Priority Pass", "Plaza Premium", airline-branded, etc.
+  accessRules String? @db.Text
+  amenities   String? @db.Text
+  bookingUrl  String? // affiliate lounge booking link
+
+  @@index([airportId])
+}
+
+// ----------------------------------------------------------------------------
+// HOTELS / TRANSFERS / PARKING — affiliate-monetizable sections
+// ----------------------------------------------------------------------------
+
+model NearbyHotel {
+  id             String  @id @default(cuid())
+  airportId      String
+  airport        Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  name           String
+  distanceKm     Float?
+  shuttleFree    Boolean @default(false)
+  starRating     Int?
+  bookingAffiliateUrl String? // Booking.com / affiliate deep link
+  imageUrl       String?
+
+  @@index([airportId])
+}
+
+enum TransferType {
+  TAXI
+  RIDESHARE
+  METRO
+  TRAIN
+  BUS
+  CAR_RENTAL
+  PRIVATE_TRANSFER
+  SHUTTLE
+}
+
+model TransferOption {
+  id           String       @id @default(cuid())
+  airportId    String
+  airport      Airport      @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  type         TransferType
+  provider     String? // "Uber", "Careem", "Heathrow Express"
+  description  String?      @db.Text
+  estimatedCost String?
+  estimatedDurationMin Int?
+  affiliateUrl String?
+
+  @@index([airportId, type])
+}
+
+enum ParkingType {
+  SHORT_STAY
+  LONG_STAY
+  VALET
+  OFFSITE
+}
+
+model ParkingOption {
+  id           String      @id @default(cuid())
+  airportId    String
+  airport      Airport     @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  type         ParkingType
+  name         String
+  pricePerDay  String?
+  distanceToTerminal String?
+  bookingUrl   String? // affiliate parking booking link
+
+  @@index([airportId, type])
+}
+
+// ----------------------------------------------------------------------------
+// TRAVELER GUIDANCE SECTIONS (1:1 with Airport)
+// ----------------------------------------------------------------------------
+
+model TransitVisaInfo {
+  id        String  @id @default(cuid())
+  airportId String  @unique
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+}
+
+model LayoverGuide {
+  id          String  @id @default(cuid())
+  airportId   String  @unique
+  airport     Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  minConnectionMinutes Int?
+  content     String  @db.Text
+}
+
+model AccessibilityInfo {
+  id        String  @id @default(cuid())
+  airportId String  @unique
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  wheelchairServiceContact String?
+}
+
+model PetTravelInfo {
+  id        String  @id @default(cuid())
+  airportId String  @unique
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  relievingAreas String?
+}
+
+model CustomsInfo {
+  id        String  @id @default(cuid())
+  airportId String  @unique
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  dutyFreeAllowance String?
+}
+
+model BaggageRules {
+  id        String  @id @default(cuid())
+  airportId String  @unique
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  lostAndFoundContact String?
+}
+
+model SecurityRules {
+  id        String  @id @default(cuid())
+  airportId String  @unique
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  content   String  @db.Text
+  liquidsRule String?
+}
+
+model AirportTip {
+  id        String  @id @default(cuid())
+  airportId String
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  tip       String  @db.Text
+  sortOrder Int     @default(0)
+
+  @@index([airportId])
+}
+
+model EmergencyContact {
+  id        String  @id @default(cuid())
+  airportId String
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  label     String // "Police", "Medical Emergency", "Airport Operations"
+  phone     String
+
+  @@index([airportId])
+}
+
+model FAQ {
+  id        String  @id @default(cuid())
+  airportId String
+  airport   Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String  @db.Text
+  sortOrder Int     @default(0)
+
+  @@index([airportId])
+}
+
+// ----------------------------------------------------------------------------
+// FEATURE / LANDING PAGES (Airport Parking, Airport Hotels, etc.)
+// Content-managed via admin so copy doesn't live in code.
+// ----------------------------------------------------------------------------
+
+model LandingPage {
+  id              String  @id @default(cuid())
+  slug            String  @unique // "airport-parking", "airport-lounges"
+  title           String
+  heroSubtitle    String?
+  bodyContent     String  @db.Text
+  metaTitle       String?
+  metaDescription String?
+  updatedAt       DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------------------
+// AFFILIATE NETWORKS & ADS — admin-managed keys, never hardcoded in components
+// ----------------------------------------------------------------------------
+
+enum AffiliateNetwork {
+  TRAVELPAYOUTS
+  AIRALO
+  DISCOVER_CARS
+  SAFETYWING
+  VISITORS_COVERAGE
+  WELCOME_PICKUPS
+  JAYRIDE
+  KIWITAXI
+  HOLIDAY_TAXIS
+  BOOKING_COM
+  VIATOR
+  GET_YOUR_GUIDE
+}
+
+model AffiliateConfig {
+  id            String           @id @default(cuid())
+  network       AffiliateNetwork @unique
+  isEnabled     Boolean          @default(false)
+  affiliateId   String? // partner/affiliate ID, never a secret key
+  baseUrl       String? // deep-link template, e.g. with {IATA} placeholder
+  notes         String?
+  updatedAt     DateTime         @updatedAt
+}
+
+enum AdSlot {
+  HEADER
+  IN_CONTENT
+  SIDEBAR
+  FOOTER
+  MOBILE_STICKY
+}
+
+model AdPlacement {
+  id        String  @id @default(cuid())
+  slot      AdSlot  @unique
+  isEnabled Boolean @default(false)
+  adUnitId  String? // AdSense ad unit slot ID
+  updatedAt DateTime @updatedAt
+}
+
+// ----------------------------------------------------------------------------
+// ADMIN
+// ----------------------------------------------------------------------------
+
+enum AdminRole {
+  SUPER_ADMIN
+  EDITOR
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(EDITOR)
+  createdAt    DateTime  @default(now())
+}

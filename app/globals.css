@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-ink-900 dark:bg-ink-950 dark:text-ink-50 font-body antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-signal;
+  }
+}
+
+@layer components {
+  .container-guide {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.18em] text-signal-dim dark:text-signal;
+  }
+  .card {
+    @apply border border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
