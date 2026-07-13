@@ -12,7 +12,7 @@ export function TerminalGuide({ terminals }: { terminals: TerminalWithAirlines[]
   if (terminals.length === 0) {
     return (
       <p className="text-sm text-ink-500">
-        Terminal-by-terminal detail for this airport hasn't been published yet.
+        Terminal-by-terminal detail for this airport hasn&apos;t been published yet.
       </p>
     );
   }

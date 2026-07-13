@@ -63,17 +63,30 @@ export async function getArrivals(iata: string): Promise<FlightStatusRow[]> {
   return [];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapAeroDataBoxDepartures(raw: any): FlightStatusRow[] {
+type AeroDataBoxRaw = {
+  departures?: Array<{
+    number: string;
+    airline?: { name?: string };
+    arrival?: { airport?: { iata?: string } };
+    departure?: {
+      scheduledTime?: { utc?: string };
+      revisedTime?: { utc?: string };
+      gate?: string;
+      terminal?: string;
+    };
+    status?: string;
+  }>;
+};
+
+function mapAeroDataBoxDepartures(raw: AeroDataBoxRaw): FlightStatusRow[] {
   if (!raw?.departures) return [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return raw.departures.map((f: any) => ({
+  return raw.departures.map((f) => ({
     flightNumber: f.number,
     airline: f.airline?.name ?? "Unknown",
     destination: f.arrival?.airport?.iata,
-    scheduledTime: f.departure?.scheduledTime?.utc,
+    scheduledTime: f.departure?.scheduledTime?.utc ?? "",
     estimatedTime: f.departure?.revisedTime?.utc,
-    status: (f.status ?? "SCHEDULED").toUpperCase(),
+    status: (f.status ?? "SCHEDULED").toUpperCase() as FlightStatusRow["status"],
     gate: f.departure?.gate,
     terminal: f.departure?.terminal,
   }));
