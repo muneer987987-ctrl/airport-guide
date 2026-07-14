@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   description:
     "Terminal maps, lounges, parking, transfers, duty free, and live flight status for major airports worldwide.",
   robots: { index: true, follow: true },
+  verification: {
+    google: "iILC-mI3XzDFc-I1CDkOnKYNGXmaZs8A_8yotz_lqTc",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
