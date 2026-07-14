@@ -1,16 +1,10 @@
 /**
- * Live flight status integration.
+ * Live flight status integration — AeroDataBox via RapidAPI.
  *
  * IMPORTANT: This file intentionally contains NO hardcoded flight data.
- * Flight schedules change constantly, so arrivals/departures must always
- * come from a live provider. Wire up one of:
- *
- *   - AeroDataBox (via RapidAPI) — good free tier, simple REST API
- *   - FlightAware AeroAPI — more authoritative, paid
- *
- * Set FLIGHT_DATA_PROVIDER and FLIGHT_DATA_API_KEY in .env, then implement
- * the fetch call below. Until configured, callers should render the
- * "live status unavailable" empty state rather than fabricated rows.
+ * If FLIGHT_DATA_API_KEY isn't set, or the provider call fails, functions
+ * return an empty array and the UI shows an honest "unavailable" state
+ * rather than fabricated rows.
  */
 
 export type FlightStatusRow = {
@@ -25,69 +19,96 @@ export type FlightStatusRow = {
   terminal?: string;
 };
 
-export async function getDepartures(iata: string): Promise<FlightStatusRow[]> {
+type AeroDataBoxFlight = {
+  number: string;
+  airline?: { name?: string };
+  status?: string;
+  departure?: {
+    airport?: { iata?: string };
+    scheduledTime?: { utc?: string };
+    revisedTime?: { utc?: string };
+    gate?: string;
+    terminal?: string;
+  };
+  arrival?: {
+    airport?: { iata?: string };
+    scheduledTime?: { utc?: string };
+    revisedTime?: { utc?: string };
+    gate?: string;
+    terminal?: string;
+  };
+};
+
+type AeroDataBoxResponse = {
+  departures?: AeroDataBoxFlight[];
+  arrivals?: AeroDataBoxFlight[];
+};
+
+/** Formats a Date as the local-time string AeroDataBox expects: YYYY-MM-DDTHH:mm */
+function toLocalParam(date: Date): string {
+  return date.toISOString().slice(0, 16);
+}
+
+async function fetchAeroDataBoxWindow(iata: string): Promise<AeroDataBoxResponse | null> {
   const apiKey = process.env.FLIGHT_DATA_API_KEY;
-  if (!apiKey) {
-    // No provider configured — surface this explicitly instead of faking data.
-    return [];
+  if (!apiKey) return null;
+
+  const now = new Date();
+  const later = new Date(now.getTime() + 6 * 60 * 60 * 1000); // 6-hour window (free-tier friendly)
+  const from = toLocalParam(now);
+  const to = toLocalParam(later);
+
+  const url = `https://aerodatabox.p.rapidapi.com/flights/airports/iata/${iata}/${from}/${to}?withLeg=true&direction=Both&withCancelled=true&withCodeshared=true&withCargo=false&withPrivate=false&withLocation=false`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "x-rapidapi-key": apiKey,
+        "x-rapidapi-host": "aerodatabox.p.rapidapi.com",
+      },
+      next: { revalidate: 300 }, // 5 min cache — respects free-tier rate limits
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as AeroDataBoxResponse;
+  } catch {
+    return null;
   }
+}
 
-  const provider = process.env.FLIGHT_DATA_PROVIDER ?? "aerodatabox";
+function mapFlight(f: AeroDataBoxFlight, kind: "departure" | "arrival"): FlightStatusRow {
+  const leg = kind === "departure" ? f.departure : f.arrival;
+  const otherLeg = kind === "departure" ? f.arrival : f.departure;
+  return {
+    flightNumber: f.number,
+    airline: f.airline?.name ?? "Unknown",
+    destination: kind === "departure" ? otherLeg?.airport?.iata : undefined,
+    origin: kind === "arrival" ? otherLeg?.airport?.iata : undefined,
+    scheduledTime: leg?.scheduledTime?.utc ?? "",
+    estimatedTime: leg?.revisedTime?.utc,
+    status: normalizeStatus(f.status),
+    gate: leg?.gate,
+    terminal: leg?.terminal,
+  };
+}
 
-  if (provider === "aerodatabox") {
-    // Example shape only — confirm exact endpoint/params against current
-    // AeroDataBox docs before enabling in production.
-    const res = await fetch(
-      `https://aerodatabox.p.rapidapi.com/flights/airports/iata/${iata}/departures`,
-      {
-        headers: {
-          "X-RapidAPI-Key": apiKey,
-          "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com",
-        },
-        next: { revalidate: 60 }, // live data, short cache
-      }
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return mapAeroDataBoxDepartures(data);
-  }
+function normalizeStatus(raw?: string): FlightStatusRow["status"] {
+  const s = (raw ?? "").toLowerCase();
+  if (s.includes("cancel")) return "CANCELLED";
+  if (s.includes("delay")) return "DELAYED";
+  if (s.includes("depart") || s.includes("gateout") || s.includes("airborne")) return "DEPARTED";
+  if (s.includes("land") || s.includes("arriv")) return "LANDED";
+  if (s.includes("board")) return "BOARDING";
+  return "SCHEDULED";
+}
 
-  // FlightAware AeroAPI branch left for implementation once credentials exist.
-  return [];
+export async function getDepartures(iata: string): Promise<FlightStatusRow[]> {
+  const data = await fetchAeroDataBoxWindow(iata);
+  if (!data?.departures) return [];
+  return data.departures.map((f) => mapFlight(f, "departure"));
 }
 
 export async function getArrivals(iata: string): Promise<FlightStatusRow[]> {
-  const apiKey = process.env.FLIGHT_DATA_API_KEY;
-  if (!apiKey) return [];
-  // Mirror of getDepartures — implement against chosen provider's arrivals endpoint.
-  return [];
-}
-
-type AeroDataBoxRaw = {
-  departures?: Array<{
-    number: string;
-    airline?: { name?: string };
-    arrival?: { airport?: { iata?: string } };
-    departure?: {
-      scheduledTime?: { utc?: string };
-      revisedTime?: { utc?: string };
-      gate?: string;
-      terminal?: string;
-    };
-    status?: string;
-  }>;
-};
-
-function mapAeroDataBoxDepartures(raw: AeroDataBoxRaw): FlightStatusRow[] {
-  if (!raw?.departures) return [];
-  return raw.departures.map((f) => ({
-    flightNumber: f.number,
-    airline: f.airline?.name ?? "Unknown",
-    destination: f.arrival?.airport?.iata,
-    scheduledTime: f.departure?.scheduledTime?.utc ?? "",
-    estimatedTime: f.departure?.revisedTime?.utc,
-    status: (f.status ?? "SCHEDULED").toUpperCase() as FlightStatusRow["status"],
-    gate: f.departure?.gate,
-    terminal: f.departure?.terminal,
-  }));
+  const data = await fetchAeroDataBoxWindow(iata);
+  if (!data?.arrivals) return [];
+  return data.arrivals.map((f) => mapFlight(f, "arrival"));
 }
