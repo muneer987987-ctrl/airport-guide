@@ -118,7 +118,12 @@ export default async function AirportPage({
               </>
             )}
           </GuideSection>
-
+<AffiliateBlock
+            networks={["TRAVELPAYOUTS"]}
+            iata={airport.iata}
+            city={airport.city.name}
+            heading="Book flights to this airport"
+          />
           <GuideSection id="terminals" title="Terminal Guide">
             <TerminalGuide terminals={airport.terminals} />
           </GuideSection>
