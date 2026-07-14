@@ -12,10 +12,10 @@ export async function loginAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
 
   const user = await db.adminUser.findUnique({ where: { email } });
-  if (!user) return { error: "Invalid email or password." };
+  if (!user) redirect("/admin/login?error=1");
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) return { error: "Invalid email or password." };
+  if (!valid) redirect("/admin/login?error=1");
 
   await createAdminSession({ userId: user.id, email: user.email, role: user.role });
   redirect("/admin");
