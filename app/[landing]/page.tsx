@@ -25,10 +25,6 @@ async function getLandingPage(slug: string) {
   return db.landingPage.findUnique({ where: { slug } });
 }
 
-export async function generateStaticParams() {
-  return VALID_SLUGS.map((landing) => ({ landing }));
-}
-
 export async function generateMetadata({
   params,
 }: {

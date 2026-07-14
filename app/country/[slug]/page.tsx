@@ -13,12 +13,6 @@ async function getCountry(slug: string) {
     include: { airports: { include: { city: true, country: true }, where: { status: "PUBLISHED" } } },
   });
 }
-
-export async function generateStaticParams() {
-  const countries = await db.country.findMany({ select: { slug: true } });
-  return countries.map((c) => ({ slug: c.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {

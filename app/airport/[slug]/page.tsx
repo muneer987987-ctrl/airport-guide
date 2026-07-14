@@ -48,15 +48,6 @@ async function getAirport(slug: string) {
     },
   });
 }
-
-export async function generateStaticParams() {
-  const airports = await db.airport.findMany({
-    where: { status: "PUBLISHED" },
-    select: { slug: true },
-  });
-  return airports.map((a) => ({ slug: a.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {
