@@ -13,6 +13,7 @@ async function getCountry(slug: string) {
     include: { airports: { include: { city: true, country: true }, where: { status: "PUBLISHED" } } },
   });
 }
+
 export async function generateMetadata({
   params,
 }: {
