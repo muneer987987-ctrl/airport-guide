@@ -66,8 +66,10 @@ export async function SiteFooter() {
           <h3 className="eyebrow mb-3">{siteName}</h3>
           <ul className="space-y-2 text-ink-600 dark:text-ink-300">
             <li><Link href="/about">About</Link></li>
+            <li><Link href="/contact">Contact</Link></li>
+            <li><Link href="/privacy">Privacy Policy</Link></li>
+            <li><Link href="/terms">Terms of Service</Link></li>
             <li><Link href="/sitemap.xml">Sitemap</Link></li>
-            <li><Link href="/admin">Admin</Link></li>
           </ul>
         </div>
       </div>
