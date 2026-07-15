@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { siteName } from "@/lib/utils";
 
 export const metadata = { title: "Privacy Policy" };
@@ -39,7 +40,7 @@ export default function PrivacyPage() {
 
         <h2 className="font-display text-lg font-600 text-ink-900 dark:text-white">Contact</h2>
         <p>
-          Questions about this policy can be sent via our <a href="/contact" className="text-beacon underline">Contact page</a>.
+          Questions about this policy can be sent via our <Link href="/contact" className="text-beacon underline">Contact page</Link>.
         </p>
       </div>
     </div>
