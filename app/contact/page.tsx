@@ -12,10 +12,7 @@ export default function ContactPage() {
       </p>
       <div className="card p-6">
         <p className="text-sm text-ink-500">Email us at</p>
-        
-          href="mailto:contact@yourairportguide.com"
-          className="font-display text-xl font-600 text-beacon"
-        >
+        <a href="mailto:contact@yourairportguide.com" className="font-display text-xl font-600 text-beacon">
           contact@yourairportguide.com
         </a>
         <p className="mt-4 text-xs text-ink-400">
