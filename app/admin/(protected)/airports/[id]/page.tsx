@@ -33,6 +33,11 @@ export default async function EditAirportPage({
         <Field label="Name" name="name" defaultValue={airport.name} />
         <TextArea label="Overview" name="overview" defaultValue={airport.overview} rows={5} />
         <Field label="Website URL" name="websiteUrl" defaultValue={airport.websiteUrl ?? ""} />
+        <Field label="Hero image URL" name="heroImageUrl" defaultValue={airport.heroImageUrl ?? ""} />
+{airport.heroImageUrl && (
+  // eslint-disable-next-line @next/next/no-img-element
+  <img src={airport.heroImageUrl} alt="" className="h-32 w-full rounded object-cover" />
+)}
         <p className="eyebrow pt-2">SEO</p>
         <Field label="Meta title" name="metaTitle" defaultValue={airport.metaTitle ?? ""} />
         <TextArea label="Meta description" name="metaDescription" defaultValue={airport.metaDescription ?? ""} rows={2} />

@@ -48,6 +48,7 @@ export async function updateAirportCore(airportId: string, formData: FormData) {
       metaTitle: String(formData.get("metaTitle") || "") || null,
       metaDescription: String(formData.get("metaDescription") || "") || null,
       websiteUrl: String(formData.get("websiteUrl") || "") || null,
+      heroImageUrl: String(formData.get("heroImageUrl") || "") || null,
     },
   });
   revalidatePath("/admin/airports");
