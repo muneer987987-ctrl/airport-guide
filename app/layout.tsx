@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -38,6 +39,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${display.variable} ${body.variable} ${mono.variable} font-body`}>
+        <Script
+  async
+  src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8536457486751109"
+  crossOrigin="anonymous"
+  strategy="beforeInteractive"
+/>
         <script {...jsonLdScriptProps([organizationSchema()])} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AdSlot slot="HEADER" />
