@@ -52,7 +52,9 @@ export async function updateAirportCore(airportId: string, formData: FormData) {
     },
   });
   revalidatePath("/admin/airports");
-  revalidatePath("/airport");
+  revalidatePath("/airport", "layout");
+  revalidatePath("/");
+  revalidatePath("/search");
 }
 
 export async function updateAffiliateConfig(network: AffiliateNetwork, formData: FormData) {
