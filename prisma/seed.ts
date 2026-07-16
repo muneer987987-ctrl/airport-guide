@@ -7,7 +7,7 @@ const db = new PrismaClient();
  * ---------------------------------------------------------------------------
  * Geographic/identity facts (IATA/ICAO codes, coordinates, timezone, country,
  * opening year, runway/terminal counts) are well-established public facts and
- * are used directly. Passenger-traffic figures are approximate, rounded, and
+ * are used directly.       Passenger-traffic figures are approximate, rounded, and
  * labeled with the year they refer to — treat them as indicative, not exact,
  * and refresh from each airport's official annual traffic report before
  * production launch (dataVerifiedAt / sourceNotes fields exist for this).
@@ -94,6 +94,55 @@ const airports = [
       { code: "Terminal 1", description: "Serves a range of international carriers on Concourses C and D." },
       { code: "Terminal 2", description: "Primarily used by flydubai and other regional carriers." },
       { code: "Terminal 3", description: "Dedicated exclusively to Emirates, including Concourse A for the A380 fleet." },
+    ],
+   lounges: [
+      {
+        name: "Marhaba Lounge",
+        terminal: "Terminal 1",
+        operator: "Marhaba (dnata)",
+        accessRules: "Pay-per-use, or free entry with Priority Pass / DragonPass membership.",
+        amenities: "Hot and cold international buffet, full bar including alcohol, shower facilities, prayer room, kids area.",
+      },
+      {
+        name: "Marhaba Lounge",
+        terminal: "Terminal 3, Concourse B",
+        operator: "Marhaba (dnata)",
+        accessRules: "Pay-per-use, or free entry with Priority Pass / DragonPass membership.",
+        amenities: "Extensive hot buffet refreshed every 2-3 hours, private bookable shower suites, sleeping pods, family zone, spa treatments available for a separate charge.",
+      },
+      {
+        name: "Emirates Business Class Lounge",
+        terminal: "Terminal 3, Concourse B",
+        operator: "Emirates",
+        accessRules: "Emirates Business Class ticket or Emirates Skywards elite tier required.",
+        amenities: "Nearly 10,000 sq ft of space, dedicated dining area, rarely overcrowded.",
+      },
+      {
+        name: "Ahlan Lounge",
+        terminal: "Terminal 1",
+        operator: "Dubai International Hotel",
+        accessRules: "Paid entry from approximately $60, or free with Priority Pass / DragonPass.",
+        amenities: "Accommodates up to 177 guests, open 24 hours, business and first class sections available.",
+      },
+      {
+        name: "Sleepover Rest Cabins",
+        terminal: "Multiple (T1 D-Gates, T3 A/B/C-Gates)",
+        operator: "Sleepover (formerly Sleep'n Fly)",
+        accessRules: "Paid, booked by the hour, from approximately $35-40.",
+        amenities: "Private and semi-private cabins with lie-flat beds, USB ports, power sockets, open 24/7.",
+      },
+    ],
+    hotels: [
+      { name: "Dubai International Hotel", distanceKm: 0, shuttleFree: true, starRating: 5 },
+      { name: "Le Méridien Dubai Hotel & Conference Centre", distanceKm: 3, shuttleFree: true, starRating: 4 },
+      { name: "Premier Inn Dubai International Airport", distanceKm: 2, shuttleFree: true, starRating: 3 },
+      { name: "Millennium Airport Hotel Dubai", distanceKm: 4, shuttleFree: true, starRating: 4 },
+      { name: "Holiday Inn Express Dubai Airport", distanceKm: 1, shuttleFree: true, starRating: 3 },
+    ],
+    tips: [
+      { tip: "Terminal 3 handles all Emirates and flydubai flights...", sortOrder: 0 },
+    
+      { tip: "If you're arriving very late at night...", sortOrder: 5 },
     ],
   },
   {
