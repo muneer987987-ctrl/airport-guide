@@ -140,9 +140,31 @@ const airports = [
       { name: "Holiday Inn Express Dubai Airport", distanceKm: 1, shuttleFree: true, starRating: 3 },
     ],
     tips: [
-      { tip: "Terminal 3 handles all Emirates and flydubai flights...", sortOrder: 0 },
-    
-      { tip: "If you're arriving very late at night...", sortOrder: 5 },
+      { tip: "Terminal 3 handles all Emirates and flydubai flights. Terminals 1 and 2 are not connected by walkway to Terminal 3 — allow 30-45 minutes for a taxi or shuttle transfer between them.", sortOrder: 0 },
+      { tip: "Taxis from any terminal have a flat AED 25 pickup charge added to the metered fare, regardless of time of day.", sortOrder: 1 },
+      { tip: "The Dubai Metro Red Line connects Terminals 1 and 3 directly to the city but stops running around midnight — use a taxi or rideshare app after that.", sortOrder: 2 },
+      { tip: "For layovers under 2.5 hours, a lounge often isn't worth it once you account for immigration and walking time. For 3+ hour layovers, it's a good investment.", sortOrder: 3 },
+      { tip: "Marhaba and Ahlan lounges serve alcohol, which is unusual for a Gulf airport and a nice perk if you're transiting.", sortOrder: 4 },
+      { tip: "If you're arriving very late at night with an early morning connection, a Sleepover rest cabin is often cheaper and more convenient than booking a full landside hotel.", sortOrder: 5 },
+    ],
+    amenities: [
+      { category: "FREE_WIFI", name: "DXB Free WiFi", location: "Terminal-wide, all concourses", description: "Connect to the network named \"DXB Free WiFi\" - no password needed. Open a browser and tap \"Get Online Now\" to go online. Free and unlimited, though WhatsApp and FaceTime calls may not work due to UAE VoIP restrictions." },
+      { category: "PHARMACY", name: "Airport Pharmacy", location: "Terminal 3 departures and arrivals; also in Terminal 1 landside", hours: "24 hours in Terminal 3" },
+      { category: "CURRENCY_EXCHANGE", name: "Travelex Currency Exchange", location: "Multiple counters across Terminal 1 (departures & arrivals) and Terminal 3 concourses", description: "22 Travelex locations across DXB. Online pre-order with in-airport pickup is also available." },
+      { category: "CHARGING_STATION", name: "Charging stations", location: "Seating areas near gates in all three terminals" },
+      { category: "ATM", name: "ATMs and banking", location: "Available in all terminals, both arrivals and departures" },
+      { category: "BABY_CARE_ROOM", name: "Baby care rooms", location: "All three terminals" },
+      { category: "PRAYER_ROOM", name: "Prayer rooms", location: "All three terminals" },
+    ],
+    transfers: [
+      { type: "TAXI", provider: "RTA Taxi", description: "Metered taxi ranks outside arrivals at every terminal. A flat AED 25 airport pickup charge is added to the metered fare.", estimatedCost: "AED 25 pickup fee plus metered fare (approx. AED 40-70 to Downtown Dubai)", estimatedDurationMin: 20 },
+      { type: "METRO", provider: "Dubai Metro Red Line", description: "Direct metro stations at Terminal 1 and Terminal 3 connect straight into the city. Terminal 2 is not served by the metro - use a taxi or shuttle bus instead. Runs roughly 5am to midnight, later on weekends.", estimatedCost: "AED 3-8.50 depending on zones travelled", estimatedDurationMin: 30 },
+      { type: "CAR_RENTAL", provider: "Hertz, Avis, Sixt, Budget, Thrifty", description: "Car rental kiosks are located in the arrivals area of every terminal." },
+    ],
+    parking: [
+      { type: "SHORT_STAY", name: "Terminal 1 Short-Stay Parking", pricePerDay: "From AED 25/hour" },
+      { type: "SHORT_STAY", name: "Terminal 2 Short-Stay Parking", pricePerDay: "From AED 15/hour" },
+      { type: "SHORT_STAY", name: "Terminal 3 Short-Stay Parking", pricePerDay: "From AED 30/hour" },
     ],
   },
   {
@@ -371,37 +393,76 @@ async function main() {
 
     // A representative starter set of amenities per airport — not exhaustive.
     // Extend via /admin as each location is verified.
-    const starterAmenities: { category: AmenityCategory; name: string; location?: string }[] = [
-      { category: AmenityCategory.CURRENCY_EXCHANGE, name: "Currency exchange counter", location: "Landside arrivals hall" },
-      { category: AmenityCategory.FREE_WIFI, name: "Free airport WiFi", location: "Terminal-wide" },
-      { category: AmenityCategory.PHARMACY, name: "Airport pharmacy", location: "Departures hall" },
-      { category: AmenityCategory.CHARGING_STATION, name: "Charging stations", location: "Gate seating areas" },
-    ];
-    for (const am of starterAmenities) {
-      await db.amenity.create({
-        data: { airportId: airport.id, ...am },
-      });
+    if ((a as any).amenities) {
+      await db.amenity.deleteMany({ where: { airportId: airport.id } });
+      for (const am of (a as any).amenities) {
+        await db.amenity.create({ data: { airportId: airport.id, ...am } });
+      }
+    } else {
+      const starterAmenities: { category: AmenityCategory; name: string; location?: string }[] = [
+        { category: AmenityCategory.CURRENCY_EXCHANGE, name: "Currency exchange counter", location: "Landside arrivals hall" },
+        { category: AmenityCategory.FREE_WIFI, name: "Free airport WiFi", location: "Terminal-wide" },
+        { category: AmenityCategory.PHARMACY, name: "Airport pharmacy", location: "Departures hall" },
+        { category: AmenityCategory.CHARGING_STATION, name: "Charging stations", location: "Gate seating areas" },
+      ];
+      for (const am of starterAmenities) {
+        await db.amenity.create({ data: { airportId: airport.id, ...am } });
+      }
     }
 
-    // Ground transport — generic categories seeded; specifics belong in admin.
-    const transferSeeds: { type: TransferType; provider?: string; description: string }[] = [
-      { type: TransferType.TAXI, description: "Metered airport taxis available at designated ranks outside arrivals." },
-      { type: TransferType.METRO, description: "Rail/metro connection into the city center — check current line and schedule." },
-      { type: TransferType.CAR_RENTAL, description: "Major car rental counters located in or near the terminal." },
-    ];
-    for (const tr of transferSeeds) {
-      await db.transferOption.create({ data: { airportId: airport.id, ...tr } });
+    if ((a as any).transfers) {
+      await db.transferOption.deleteMany({ where: { airportId: airport.id } });
+      for (const tr of (a as any).transfers) {
+        await db.transferOption.create({ data: { airportId: airport.id, ...tr } });
+      }
+    } else {
+      const transferSeeds: { type: TransferType; provider?: string; description: string }[] = [
+        { type: TransferType.TAXI, description: "Metered airport taxis available at designated ranks outside arrivals." },
+        { type: TransferType.METRO, description: "Rail/metro connection into the city center — check current line and schedule." },
+        { type: TransferType.CAR_RENTAL, description: "Major car rental counters located in or near the terminal." },
+      ];
+      for (const tr of transferSeeds) {
+        await db.transferOption.create({ data: { airportId: airport.id, ...tr } });
+      }
     }
 
-    const parkingSeeds: { type: ParkingType; name: string }[] = [
-      { type: ParkingType.SHORT_STAY, name: "Short-stay terminal parking" },
-      { type: ParkingType.LONG_STAY, name: "Long-stay / economy parking" },
-    ];
-    for (const p of parkingSeeds) {
-      await db.parkingOption.create({ data: { airportId: airport.id, ...p } });
+    if ((a as any).parking) {
+      await db.parkingOption.deleteMany({ where: { airportId: airport.id } });
+      for (const p of (a as any).parking) {
+        await db.parkingOption.create({ data: { airportId: airport.id, ...p } });
+      }
+    } else {
+      const parkingSeeds: { type: ParkingType; name: string }[] = [
+        { type: ParkingType.SHORT_STAY, name: "Short-stay terminal parking" },
+        { type: ParkingType.LONG_STAY, name: "Long-stay / economy parking" },
+      ];
+      for (const p of parkingSeeds) {
+        await db.parkingOption.create({ data: { airportId: airport.id, ...p } });
+      }
+      if ((a as any).lounges) {
+      await db.lounge.deleteMany({ where: { airportId: airport.id } });
+      for (const l of (a as any).lounges) {
+        await db.lounge.create({ data: { airportId: airport.id, ...l } });
+      }
+    }
+
+    if ((a as any).hotels) {
+      await db.nearbyHotel.deleteMany({ where: { airportId: airport.id } });
+      for (const h of (a as any).hotels) {
+        await db.nearbyHotel.create({ data: { airportId: airport.id, ...h } });
+      }
+    }
+
+    if ((a as any).tips) {
+      await db.airportTip.deleteMany({ where: { airportId: airport.id } });
+      for (const tp of (a as any).tips) {
+        await db.airportTip.create({ data: { airportId: airport.id, ...tp } });
+      }
+    }
     }
 
     // Baseline FAQ — generic but genuinely useful, extend per airport in admin.
+    await db.fAQ.deleteMany({ where: { airportId: airport.id } });
     await db.fAQ.createMany({
       data: [
         {
