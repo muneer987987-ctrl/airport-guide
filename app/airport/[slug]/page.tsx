@@ -19,6 +19,9 @@ import { FaqAccordion } from "@/components/faq-accordion";
 import { GuideSection } from "@/components/guide-section";
 import { AffiliateBlock } from "@/components/affiliate-block";
 import { AdSlot } from "@/components/ad-slot";
+import { ShareButtons } from "@/components/share-buttons";
+import { RelatedAirports } from "@/components/related-airports";
+import { CurrencyConverter } from "@/components/currency-converter";
 import type { Metadata } from "next";
 
 export const revalidate = 3600; // ISR — hourly regeneration keeps 10k+ pages fast without full rebuilds
