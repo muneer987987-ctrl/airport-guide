@@ -34,7 +34,7 @@ export function GlobalSearch({ compact = false }: { compact?: boolean }) {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search airport, city, or IATA code…"
         aria-label="Search airports"
-        className="w-full bg-transparent text-sm outline-none placeholder:text-ink-400"
+        className="w-full bg-transparent text-sm text-ink-900 outline-none placeholder:text-ink-400 dark:text-white"
       />
       <button
         type="submit"

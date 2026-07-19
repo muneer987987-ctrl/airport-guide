@@ -14,6 +14,7 @@ import { TerminalGuide } from "@/components/terminal-guide";
 import { AmenityGrid } from "@/components/amenity-grid";
 import { FlightStatusWidget } from "@/components/flight-status-widget";
 import { WeatherWidget } from "@/components/weather-widget";
+import { LocalTimeWidget } from "@/components/local-time-widget";
 import { FaqAccordion } from "@/components/faq-accordion";
 import { GuideSection } from "@/components/guide-section";
 import { AffiliateBlock } from "@/components/affiliate-block";
@@ -258,6 +259,7 @@ export default async function AirportPage({
         </div>
 
         <aside className="space-y-6">
+          <LocalTimeWidget timezone={airport.timezone} airportName={airport.iata} />
           <FlightStatusWidget iata={airport.iata} />
           <WeatherWidget lat={airport.latitude} lon={airport.longitude} />
           <FactsPanel
