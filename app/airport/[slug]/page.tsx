@@ -90,6 +90,9 @@ export default async function AirportPage({
       />
       <Breadcrumbs items={breadcrumbItems} />
       <div className="container-guide py-3">
+  <ShareButtons url={`https://airport-guide-seven.vercel.app/airport/${airport.slug}`} title={airport.name} />
+</div>
+      <div className="container-guide py-3">
         <ShareButtons url={`https://airport-guide-seven.vercel.app/airport/${airport.slug}`} title={airport.name} />
       </div>
 
