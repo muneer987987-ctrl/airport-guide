@@ -89,6 +89,9 @@ export default async function AirportPage({
         ])}
       />
       <Breadcrumbs items={breadcrumbItems} />
+      <div className="container-guide py-3">
+        <ShareButtons url={`https://airport-guide-seven.vercel.app/airport/${airport.slug}`} title={airport.name} />
+      </div>
 
       <header className="relative h-[320px] w-full bg-ink-900 sm:h-[420px]">
         {airport.heroImageUrl && (
@@ -262,8 +265,7 @@ export default async function AirportPage({
         </div>
 
         <aside className="space-y-6">
-          <LocalTimeWidget timezone={airport.timezone} airportName={airport.iata} />
-          <FlightStatusWidget iata={airport.iata} />
+          
           <WeatherWidget lat={airport.latitude} lon={airport.longitude} />
           <FactsPanel
             iata={airport.iata}
@@ -310,6 +312,10 @@ export default async function AirportPage({
 
       <div className="container-guide">
         <AdSlot slot="IN_CONTENT" />
+      </div>
+
+      <div className="container-guide">
+        <RelatedAirports currentAirportId={airport.id} countryId={airport.countryId} />
       </div>
     </>
   );
