@@ -500,6 +500,19 @@ enum AdminRole {
   EDITOR
 }
 
+model BlogPost {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  excerpt         String
+  content         String   @db.Text
+  coverImageUrl   String?
+  metaTitle       String?
+  metaDescription String?
+  published       Boolean  @default(true)
+  publishedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
 model AdminUser {
   id           String    @id @default(cuid())
   email        String    @unique
