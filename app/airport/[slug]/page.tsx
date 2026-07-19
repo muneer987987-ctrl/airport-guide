@@ -92,9 +92,7 @@ export default async function AirportPage({
       <div className="container-guide py-3">
   <ShareButtons url={`https://airport-guide-seven.vercel.app/airport/${airport.slug}`} title={airport.name} />
 </div>
-      <div className="container-guide py-3">
-        <ShareButtons url={`https://airport-guide-seven.vercel.app/airport/${airport.slug}`} title={airport.name} />
-      </div>
+      
 
       <header className="relative h-[320px] w-full bg-ink-900 sm:h-[420px]">
         {airport.heroImageUrl && (
