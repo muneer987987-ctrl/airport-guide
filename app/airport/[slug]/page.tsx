@@ -266,7 +266,9 @@ export default async function AirportPage({
         </div>
 
         <aside className="space-y-6">
-          
+          <LocalTimeWidget timezone={airport.timezone} airportName={airport.iata} />
+          <CurrencyConverter countryIso2={airport.country.isoCode2} />
+          <FlightStatusWidget iata={airport.iata} />
           <WeatherWidget lat={airport.latitude} lon={airport.longitude} />
           <FactsPanel
             iata={airport.iata}
