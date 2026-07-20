@@ -73,4 +73,3 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     </>
   );
 }
-'@ | Set-Content -LiteralPath "app\blog\[slug]\page.tsx" -Encoding utf8
