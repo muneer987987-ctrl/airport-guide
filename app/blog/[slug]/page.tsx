@@ -1,4 +1,4 @@
-  import { notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { siteUrl, siteName } from "@/lib/utils";
@@ -73,4 +73,3 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     </>
   );
 }
-'@ | Set-Content -LiteralPath "app\blog\[slug]\page.tsx" -Encoding utf8

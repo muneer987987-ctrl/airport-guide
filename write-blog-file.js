@@ -1,4 +1,7 @@
-  import { notFound } from "next/navigation";
+const fs = require("fs");
+const path = require("path");
+
+const content = `import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { siteUrl, siteName } from "@/lib/utils";
@@ -24,9 +27,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return {};
-  const title = post.metaTitle ?? `${post.title} | ${siteName}`;
+  const title = post.metaTitle ?? \`\${post.title} | \${siteName}\`;
   const description = post.metaDescription ?? post.excerpt;
-  const url = `${siteUrl}/blog/${post.slug}`;
+  const url = \`\${siteUrl}/blog/\${post.slug}\`;
   return {
     title,
     description,
@@ -43,10 +46,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const breadcrumbItems = [
     { name: "Home", path: "/" },
     { name: "Guides", path: "/blog" },
-    { name: post.title, path: `/blog/${post.slug}` },
+    { name: post.title, path: \`/blog/\${post.slug}\` },
   ];
 
-  const blocks = post.content.split("\n\n").filter(Boolean);
+  const blocks = post.content.split("\\n\\n").filter(Boolean);
 
   return (
     <>
@@ -73,4 +76,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     </>
   );
 }
-'@ | Set-Content -LiteralPath "app\blog\[slug]\page.tsx" -Encoding utf8
+`;
+
+const dir = path.join(__dirname, "app", "blog", "[slug]");
+fs.mkdirSync(dir, { recursive: true });
+fs.writeFileSync(path.join(dir, "page.tsx"), content, "utf8");
+console.log("File written successfully!");
+console.log("Size:", fs.statSync(path.join(dir, "page.tsx")).size, "bytes");
