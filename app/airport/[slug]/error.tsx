@@ -13,7 +13,7 @@ export default function ErrorBoundary({
         Something went wrong
       </h2>
       <p className="mt-2 text-ink-500">
-  We couldn&apos;t load this airport guide. Please try again.  // ✅ &apos; use karo
+  We couldn&apos;t load this airport guide. Please try again.
 </p>
       <button 
         onClick={reset} 

@@ -19,16 +19,19 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen">
       {/* ===== HERO SECTION ===== */}
-      <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-ink-900">
-        {/* Background Image */}
-        <Image
-          src="/hero-airport.jpg"
-          alt="Airport terminal"
-          fill
-          className="object-cover opacity-40"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-ink-900/60 via-transparent to-ink-900" />
+<section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-ink-900">
+  {/* Animated Gradient Background */}
+  <div className="absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-800 to-signal/20" />
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-signal/10 via-transparent to-transparent" />
+  
+  {/* Floating Elements Animation */}
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute top-20 left-10 w-72 h-72 bg-signal/5 rounded-full blur-3xl animate-pulse" />
+    <div className="absolute bottom-20 right-10 w-96 h-96 bg-beacon/5 rounded-full blur-3xl animate-pulse delay-1000" />
+  </div>
+  
+  {/* Grid Pattern Overlay */}
+  <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]" />
         
         {/* Hero Content */}
         <div className="relative z-10 container-guide text-center">
