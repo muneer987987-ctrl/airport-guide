@@ -1,53 +1,55 @@
 import Link from "next/link";
 import Image from "next/image";
-import { formatMillions } from "@/lib/utils";
+import { MapPin, ArrowRight } from "lucide-react";
 
-export type AirportCardData = {
-  slug: string;
-  name: string;
-  iata: string;
-  icao: string;
-  heroImageUrl: string | null;
-  descriptionShort: string | null;
-  annualPassengers: number | null;
-  city: { name: string };
-  country: { name: string; flagEmoji: string | null };
-};
+interface AirportCardProps {
+  airport: {
+    slug: string;
+    name: string;
+    iata: string;
+    city: { name: string };
+    country: { name: string };
+    heroImageUrl?: string | null;
+  };
+}
 
-export function AirportCard({ airport }: { airport: AirportCardData }) {
+export function AirportCard({ airport }: AirportCardProps) {
   return (
-    <Link
-      href={`/airport/${airport.slug}`}
-      className="card group flex flex-col overflow-hidden transition-shadow hover:shadow-lg"
-    >
-      <div className="relative h-40 w-full bg-ink-100 dark:bg-ink-800">
-        {airport.heroImageUrl ? (
-          <Image
-            src={airport.heroImageUrl}
-            alt={airport.name}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover transition-transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center font-mono text-3xl text-ink-300 dark:text-ink-600">
-            {airport.iata}
+    <Link href={`/airport/${airport.slug}`} className="group">
+      <div className="card overflow-hidden hover:shadow-xl transition-all duration-300">
+        {/* Image */}
+        <div className="relative h-48 bg-ink-200 dark:bg-ink-700">
+          {airport.heroImageUrl ? (
+            <Image
+              src={airport.heroImageUrl}
+              alt={airport.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-ink-400">
+              <MapPin className="w-12 h-12" />
+            </div>
+          )}
+          {/* IATA Badge */}
+          <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-ink-900/90 rounded-full">
+            <span className="font-mono font-bold text-sm">{airport.iata}</span>
           </div>
-        )}
-        <div className="absolute left-2 top-2 bg-ink-950/80 px-2 py-1 font-mono text-xs text-white">
-          {airport.iata} · {airport.icao}
         </div>
-      </div>
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-base font-600 leading-tight">{airport.name}</h3>
-        <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
-          {airport.city.name}, {airport.country.name}
-        </p>
-        {airport.annualPassengers && (
-          <p className="mt-2 font-mono text-xs text-ink-400">
-            {formatMillions(airport.annualPassengers)} passengers/yr
+        
+        {/* Content */}
+        <div className="p-5">
+          <h3 className="font-display text-lg font-bold group-hover:text-signal transition">
+            {airport.name}
+          </h3>
+          <p className="flex items-center gap-1 text-sm text-ink-500 mt-1">
+            <MapPin className="w-3 h-3" />
+            {airport.city.name}, {airport.country.name}
           </p>
-        )}
+          <div className="mt-4 flex items-center text-sm text-signal font-medium">
+            View Guide <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition" />
+          </div>
+        </div>
       </div>
     </Link>
   );

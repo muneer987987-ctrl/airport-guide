@@ -1,81 +1,181 @@
-import { db } from "@/lib/db";
-import { GlobalSearch } from "@/components/global-search";
-import { AirportCard } from "@/components/airport-card";
-import { DepartureBoard } from "@/components/departure-board";
+import Image from "next/image";
 import Link from "next/link";
+import { GlobalSearch } from "@/components/global-search";
+import { db } from "@/lib/db";
+import { ArrowRight, Plane, Globe, Map, Shield } from "lucide-react";
 
-export const revalidate = 3600; // ISR: refresh hourly
+async function getFeaturedAirports() {
+  return db.airport.findMany({
+    where: { status: "PUBLISHED" },
+    include: { city: true, country: true },
+    orderBy: { annualPassengers: "desc" },
+    take: 6,
+  });
+}
 
 export default async function HomePage() {
-  const [airports, airportCount, countryCount] = await Promise.all([
-    db.airport.findMany({
-      where: { status: "PUBLISHED" },
-      orderBy: { annualPassengers: "desc" },
-      take: 9,
-      include: { city: true, country: true },
-    }),
-    db.airport.count({ where: { status: "PUBLISHED" } }),
-    db.country.count(),
-  ]);
+  const airports = await getFeaturedAirports();
 
   return (
-    <>
-      <section className="border-b border-ink-200 bg-ink-950 text-white dark:border-ink-800">
-        <div className="container-guide flex flex-col items-start gap-8 py-16 lg:flex-row lg:items-center lg:py-24">
-          <div className="max-w-xl">
-            <p className="eyebrow mb-4">Now boarding</p>
-            <h1 className="font-display text-4xl font-700 leading-[1.05] sm:text-5xl">
-              The airport guide for wherever your gate is.
-            </h1>
-            <p className="mt-5 text-ink-300">
-              Terminal maps, lounges, parking, transfers, and live flight status —
-              built for {airportCount}+ airports and growing toward every airport on earth.
-            </p>
-            <div className="mt-8">
-              <GlobalSearch />
+    <div className="min-h-screen">
+      {/* ===== HERO SECTION ===== */}
+      <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-ink-900">
+        {/* Background Image */}
+        <Image
+          src="/hero-airport.jpg"
+          alt="Airport terminal"
+          fill
+          className="object-cover opacity-40"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink-900/60 via-transparent to-ink-900" />
+        
+        {/* Hero Content */}
+        <div className="relative z-10 container-guide text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-signal/20 text-signal text-sm mb-6">
+            <Plane className="w-4 h-4" />
+            <span>Trusted by 1M+ travelers</span>
+          </div>
+          
+          <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+            Your Airport<br />
+            <span className="text-signal">Companion</span>
+          </h1>
+          
+          <p className="text-lg text-ink-200 max-w-2xl mx-auto mb-10">
+            Terminal maps, lounges, parking, transfers, and live flight status 
+            — everything you need before you fly.
+          </p>
+          
+          <div className="max-w-xl mx-auto">
+            <GlobalSearch />
+          </div>
+          
+          {/* Popular Searches */}
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <span className="text-sm text-ink-300">Popular:</span>
+            {["LHR", "DXB", "JFK", "SIN", "HND"].map((code) => (
+              <Link
+                key={code}
+                href={`/airport/${code.toLowerCase()}`}
+                className="px-3 py-1 text-sm bg-white/10 text-white rounded-full hover:bg-signal transition"
+              >
+                {code}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== STATS BAR ===== */}
+      <section className="bg-ink-800 py-8 border-y border-ink-700">
+        <div className="container-guide">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <StatCard icon={<Plane />} number="50+" label="Airports" />
+            <StatCard icon={<Globe />} number="36" label="Countries" />
+            <StatCard icon={<Map />} number="40+" label="Guide Sections" />
+            <StatCard icon={<Shield />} number="10K+" label="Global Coverage" />
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FEATURED AIRPORTS ===== */}
+      <section className="py-20 bg-white dark:bg-ink-900">
+        <div className="container-guide">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="font-display text-3xl font-bold text-ink-900 dark:text-white">
+                Featured Airports
+              </h2>
+              <p className="mt-2 text-ink-500">Most visited guides</p>
             </div>
-            <p className="mt-3 font-mono text-xs text-ink-400">
-              Try “LHR”, “Dubai”, or “Tokyo Haneda”
-            </p>
+            <Link 
+              href="/search" 
+              className="flex items-center gap-2 text-signal hover:underline"
+            >
+              View all <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-          <DepartureBoard />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {airports.map((airport) => (
+              <AirportCard key={airport.slug} airport={airport} />
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="container-guide py-14">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <p className="eyebrow mb-2">Busiest hubs</p>
-            <h2 className="font-display text-2xl font-600">Popular airports</h2>
+      {/* ===== FEATURES GRID ===== */}
+      <section className="py-20 bg-ink-50 dark:bg-ink-800">
+        <div className="container-guide">
+          <h2 className="font-display text-3xl font-bold text-center text-ink-900 dark:text-white mb-12">
+            Everything You Need to Know
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard 
+              icon={<Map />}
+              title="Terminal Maps"
+              description="Navigate complex terminals with detailed maps and directions."
+            />
+            <FeatureCard 
+              icon={<Plane />}
+              title="Lounges"
+              description="Find the best lounges with access rules and amenities."
+            />
+            <FeatureCard 
+              icon={<Globe />}
+              title="Transfers"
+              description="Taxi, metro, bus — all ground transport options covered."
+            />
           </div>
-          <Link href="/search" className="font-mono text-sm text-beacon">
-            Browse all →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {airports.map((a) => (
-            <AirportCard key={a.slug} airport={a} />
-          ))}
         </div>
       </section>
 
-      <section className="border-t border-ink-200 bg-ink-50 py-14 dark:border-ink-800 dark:bg-ink-900">
-        <div className="container-guide grid grid-cols-2 gap-6 text-center sm:grid-cols-4">
-          <Stat label="Airports covered" value={String(airportCount)} />
-          <Stat label="Countries" value={String(countryCount)} />
-          <Stat label="Guide sections per airport" value="40+" />
-          <Stat label="Built for scale" value="10,000+" />
+      {/* ===== NEWSLETTER ===== */}
+      <section className="py-20 bg-signal">
+        <div className="container-guide text-center">
+          <h2 className="font-display text-3xl font-bold text-white mb-4">
+            Never Miss a Flight Update
+          </h2>
+          <p className="text-white/80 mb-8 max-w-md mx-auto">
+            Get airport tips, deals, and news delivered to your inbox.
+          </p>
+          <form className="flex gap-3 max-w-md mx-auto">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="flex-1 px-4 py-3 rounded-lg text-ink-900 outline-none"
+            />
+            <button className="px-6 py-3 bg-ink-900 text-white rounded-lg font-medium hover:bg-ink-800 transition">
+              Subscribe
+            </button>
+          </form>
         </div>
       </section>
-    </>
+    </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+/* ===== HELPER COMPONENTS ===== */
+
+function StatCard({ icon, number, label }: { icon: React.ReactNode; number: string; label: string }) {
   return (
-    <div>
-      <div className="font-mono text-3xl font-500 text-signal-dim dark:text-signal">{value}</div>
-      <div className="mt-1 text-sm text-ink-500 dark:text-ink-400">{label}</div>
+    <div className="flex flex-col items-center gap-2">
+      <div className="text-signal">{icon}</div>
+      <div className="font-display text-2xl font-bold text-white">{number}</div>
+      <div className="text-sm text-ink-300">{label}</div>
+    </div>
+  );
+}
+
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return (
+    <div className="card p-6 hover:shadow-lg transition">
+      <div className="w-12 h-12 rounded-lg bg-signal/10 flex items-center justify-center text-signal mb-4">
+        {icon}
+      </div>
+      <h3 className="font-display text-lg font-bold mb-2">{title}</h3>
+      <p className="text-ink-500 text-sm">{description}</p>
     </div>
   );
 }

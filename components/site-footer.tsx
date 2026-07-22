@@ -1,81 +1,73 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
-import { siteName } from "@/lib/utils";
+import { Plane, Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
 
-const FEATURE_LINKS = [
-  { href: "/airport-parking", label: "Airport Parking" },
-  { href: "/airport-hotels", label: "Airport Hotels" },
-  { href: "/airport-taxi", label: "Airport Taxi" },
-  { href: "/airport-metro", label: "Airport Metro & Trains" },
-  { href: "/airport-lounges", label: "Airport Lounges" },
-  { href: "/airport-maps", label: "Airport Maps" },
-  { href: "/airport-weather", label: "Airport Weather" },
-  { href: "/airport-transfers", label: "Airport Transfers" },
-  { href: "/airport-flight-status", label: "Live Flight Status" },
-  { href: "/airport-currency-exchange", label: "Currency Exchange" },
-  { href: "/airport-faqs", label: "Airport FAQs" },
-];
-
-export async function SiteFooter() {
-  const countries = await db.country.findMany({
-    orderBy: { name: "asc" },
-    take: 12,
-    select: { slug: true, name: true },
-  });
-
+export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-ink-200 bg-ink-50 dark:border-ink-800 dark:bg-ink-900">
-      <div className="container-guide grid grid-cols-2 gap-8 py-12 text-sm sm:grid-cols-4">
-        <div>
-          <h3 className="eyebrow mb-3">Guides</h3>
-          <ul className="space-y-2">
-            {FEATURE_LINKS.slice(0, 6).map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} className="text-ink-600 hover:text-signal-dim dark:text-ink-300 dark:hover:text-signal">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+    <footer className="bg-ink-900 text-white py-16">
+      <div className="container-guide">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          {/* Brand */}
+          <div className="md:col-span-1">
+            <div className="flex items-center gap-2 mb-4">
+              <Plane className="w-6 h-6 text-signal" />
+              <span className="font-display font-bold text-xl">Airport Guide</span>
+            </div>
+            <p className="text-ink-300 text-sm leading-relaxed">
+              The most comprehensive airport guide on earth. 
+              Helping travelers navigate 50+ airports worldwide.
+            </p>
+          </div>
+
+          {/* Links */}
+          <div>
+            <h4 className="font-display font-bold mb-4">Explore</h4>
+            <ul className="space-y-2 text-sm text-ink-300">
+              <li><Link href="/search" className="hover:text-signal transition">All Airports</Link></li>
+              <li><Link href="/blog" className="hover:text-signal transition">Blog</Link></li>
+              <li><Link href="/airport-parking" className="hover:text-signal transition">Parking</Link></li>
+              <li><Link href="/airport-hotels" className="hover:text-signal transition">Hotels</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-display font-bold mb-4">Company</h4>
+            <ul className="space-y-2 text-sm text-ink-300">
+              <li><Link href="/about" className="hover:text-signal transition">About</Link></li>
+              <li><Link href="/contact" className="hover:text-signal transition">Contact</Link></li>
+              <li><Link href="/privacy" className="hover:text-signal transition">Privacy</Link></li>
+              <li><Link href="/terms" className="hover:text-signal transition">Terms</Link></li>
+            </ul>
+          </div>
+
+          {/* Social */}
+          <div>
+            <h4 className="font-display font-bold mb-4">Follow Us</h4>
+            <div className="flex gap-4">
+              <a href="#" className="w-10 h-10 rounded-full bg-ink-800 flex items-center justify-center hover:bg-signal transition">
+                <Twitter className="w-4 h-4" />
+              </a>
+              <a href="#" className="w-10 h-10 rounded-full bg-ink-800 flex items-center justify-center hover:bg-signal transition">
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a href="#" className="w-10 h-10 rounded-full bg-ink-800 flex items-center justify-center hover:bg-signal transition">
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a href="#" className="w-10 h-10 rounded-full bg-ink-800 flex items-center justify-center hover:bg-signal transition">
+                <Linkedin className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
         </div>
-        <div>
-          <h3 className="eyebrow mb-3">More Guides</h3>
-          <ul className="space-y-2">
-            {FEATURE_LINKS.slice(6).map((l) => (
-              <li key={l.href}>
-                <Link href={l.href} className="text-ink-600 hover:text-signal-dim dark:text-ink-300 dark:hover:text-signal">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+
+        {/* Bottom */}
+        <div className="mt-12 pt-8 border-t border-ink-800 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-ink-400">
+            © 2026 Airport Guide. All rights reserved.
+          </p>
+          <p className="text-sm text-ink-400">
+            Made with ❤️ for travelers worldwide
+          </p>
         </div>
-        <div>
-          <h3 className="eyebrow mb-3">Countries</h3>
-          <ul className="space-y-2">
-            {countries.map((c) => (
-              <li key={c.slug}>
-                <Link href={`/country/${c.slug}`} className="text-ink-600 hover:text-signal-dim dark:text-ink-300 dark:hover:text-signal">
-                  {c.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h3 className="eyebrow mb-3">{siteName}</h3>
-          <ul className="space-y-2 text-ink-600 dark:text-ink-300">
-            <li><Link href="/blog">Travel Guides</Link></li>
-            <li><Link href="/about">About</Link></li>
-            <li><Link href="/contact">Contact</Link></li>
-            <li><Link href="/privacy">Privacy Policy</Link></li>
-            <li><Link href="/terms">Terms of Service</Link></li>
-            <li><Link href="/sitemap.xml">Sitemap</Link></li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-ink-200 py-4 text-center font-mono text-xs text-ink-400 dark:border-ink-800">
-        © {new Date().getFullYear()} {siteName}. Flight and weather data from third-party providers; verify time-critical information with your airline.
       </div>
     </footer>
   );
