@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { GlobalSearch } from "@/components/global-search";
 import { AirportCard } from "@/components/airport-card"
+import { PlaneAnimation } from "@/components/plane-animation"
 import { db } from "@/lib/db";
 import { ArrowRight, Plane, Globe, Map, Shield } from "lucide-react";
 
@@ -21,6 +22,8 @@ export default async function HomePage() {
     <div className="min-h-screen">
       {/* ===== HERO SECTION ===== */}
 <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-ink-900">
+   {/* Plane Animation */}
+  <PlaneAnimation />
   {/* Animated Gradient Background */}
   <div className="absolute inset-0 bg-gradient-to-br from-ink-900 via-ink-800 to-signal/20" />
   <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-signal/10 via-transparent to-transparent" />
