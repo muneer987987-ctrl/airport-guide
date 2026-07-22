@@ -39,7 +39,7 @@ export function GlobalSearch({ compact = false }: { compact?: boolean }) {
       <button
         type="submit"
         disabled={isPending}
-        className="hidden shrink-0 font-mono text-xs uppercase tracking-wide text-beacon disabled:opacity-50 sm:block"
+        className="shrink-0 font-mono text-xs uppercase tracking-wide text-signal disabled:opacity-50 px-3 py-1 border border-signal hover:bg-signal hover:text-white transition"
       >
         Go
       </button>
