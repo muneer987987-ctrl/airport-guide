@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { GlobalSearch } from "@/components/global-search";
+import { AirportCard } from "@/components/airport-card"
 import { db } from "@/lib/db";
 import { ArrowRight, Plane, Globe, Map, Shield } from "lucide-react";
 
