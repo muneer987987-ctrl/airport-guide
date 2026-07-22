@@ -8,17 +8,21 @@ import { siteUrl } from "@/lib/utils";
  * into a chunked sitemap index using generateSitemaps().
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [countries, cities, airports] = await Promise.all([
+  const [countries, cities, airports, blogPosts] = await Promise.all([
     db.country.findMany({ select: { slug: true, updatedAt: true } }),
     db.city.findMany({ select: { slug: true, updatedAt: true } }),
     db.airport.findMany({
       where: { status: "PUBLISHED" },
       select: { slug: true, updatedAt: true },
     }),
+    db.blogPost.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true },
+    }),
   ]);
 
   const staticEntries = [
-    "", "search", "airport-parking", "airport-hotels", "airport-taxi",
+    "", "search", "blog", "airport-parking", "airport-hotels", "airport-taxi",
     "airport-metro", "airport-lounges", "airport-maps", "airport-weather",
     "airport-transfers", "airport-flight-status", "airport-currency-exchange",
     "airport-faqs",
@@ -47,6 +51,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: a.updatedAt,
       changeFrequency: "daily" as const,
       priority: 0.9,
+    })),
+    ...blogPosts.map((b) => ({
+      url: `${siteUrl}/blog/${b.slug}`,
+      lastModified: b.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
     })),
   ];
 }
