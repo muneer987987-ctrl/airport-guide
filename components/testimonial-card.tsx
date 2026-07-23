@@ -13,7 +13,7 @@ export function TestimonialCard({ name, role, text, rating }: {
           <Star key={i} className="w-4 h-4 fill-signal text-signal" />
         ))}
       </div>
-      <p className="text-ink-700 dark:text-ink-200 mb-4 italic">"{text}"</p>
+      <p className="text-ink-700 dark:text-ink-200 mb-4 italic">&ldquo;{text}&rdquo;</p>
       <div>
         <p className="font-bold text-ink-900 dark:text-white">{name}</p>
         <p className="text-sm text-ink-500">{role}</p>
