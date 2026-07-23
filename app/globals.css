@@ -39,3 +39,110 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ===== AIRPLANE ANIMATION ===== */
+
+.airplane {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: all 4s ease-in-out;
+}
+
+.plane-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+/* Landing Gear Animation */
+.gear {
+  transition: opacity 0.5s ease;
+}
+
+.gear.retracted {
+  opacity: 0;
+}
+
+/* Takeoff Phase */
+.airplane.takeoff {
+  bottom: 80px;
+  transform: translateX(-50%) rotate(-5deg);
+  animation: takeoffShake 0.5s ease-in-out infinite;
+}
+
+/* Flying Phase */
+.airplane.flying {
+  bottom: 300px;
+  transform: translateX(-50%) rotate(0deg) scale(0.9);
+  animation: flyFloat 3s ease-in-out infinite;
+}
+
+/* Landing Phase */
+.airplane.landing {
+  bottom: 80px;
+  transform: translateX(-50%) rotate(3deg);
+  animation: landingShake 0.3s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes takeoffShake {
+  0%, 100% { transform: translateX(-50%) rotate(-5deg) translateY(0); }
+  50% { transform: translateX(-50%) rotate(-5deg) translateY(-3px); }
+}
+
+@keyframes flyFloat {
+  0%, 100% { transform: translateX(-50%) rotate(0deg) scale(0.9) translateY(0); }
+  50% { transform: translateX(-50%) rotate(0deg) scale(0.9) translateY(-15px); }
+}
+
+@keyframes landingShake {
+  0%, 100% { transform: translateX(-50%) rotate(3deg) translateY(0); }
+  50% { transform: translateX(-50%) rotate(3deg) translateY(2px); }
+}
+
+/* Clouds */
+.clouds-container {
+  position: absolute;
+  inset: 0;
+  opacity: 0.6;
+}
+
+.cloud {
+  position: absolute;
+  font-size: 60px;
+  opacity: 0.7;
+  animation: cloudMove linear infinite;
+}
+
+.cloud-1 { top: 10%; left: -10%; animation-duration: 20s; }
+.cloud-2 { top: 30%; left: -20%; animation-duration: 25s; animation-delay: 5s; }
+.cloud-3 { top: 60%; left: -15%; animation-duration: 22s; animation-delay: 10s; }
+.cloud-4 { top: 80%; left: -25%; animation-duration: 28s; animation-delay: 15s; }
+
+@keyframes cloudMove {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 100px)); }
+}
+
+/* Runway */
+.runway {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.runway-line {
+  width: 80px;
+  height: 4px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 2px;
+}

@@ -1,135 +1,97 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function PlaneAnimation() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [phase, setPhase] = useState<'takeoff' | 'flying' | 'landing'>('takeoff')
+  const planeRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    // Set canvas size
-    const handleResize = () => {
-      canvas.width = canvas.offsetWidth * 2
-      canvas.height = canvas.offsetHeight * 2
-      ctx.scale(2, 2)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    // Plane properties
-    let x = -100
-    let y = 100
-    let angle = 0
-    const speed = 1.5
-    const amplitude = 30
-    const frequency = 0.02
-
-    // Trail particles
-    const trails: { x: number; y: number; alpha: number }[] = []
-
-    // Animation loop
-    let animationId: number
-
-    function animate() {
-      if (!ctx || !canvas) return
+    const cycle = () => {
+      // Phase 1: Takeoff (0-4s)
+      setPhase('takeoff')
       
-      const width = canvas.offsetWidth
-      const height = canvas.offsetHeight
+      // Phase 2: Flying (4-8s)
+      setTimeout(() => setPhase('flying'), 4000)
       
-      ctx.clearRect(0, 0, width, height)
-
-      // Update plane position
-      x += speed
-      y = 100 + Math.sin(x * frequency) * amplitude
-      angle = Math.cos(x * frequency) * 0.1
-
-      // Reset when off screen
-      if (x > width + 100) {
-        x = -100
-        trails.length = 0
-      }
-
-      // Add trail
-      trails.push({ x, y: y + 20, alpha: 1 })
-      if (trails.length > 50) trails.shift()
-
-      // Draw trails
-      trails.forEach((trail) => {
-        trail.alpha -= 0.02
-        ctx.beginPath()
-        ctx.arc(trail.x, trail.y, 2, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(255, 200, 100, ${Math.max(0, trail.alpha * 0.5)})`
-        ctx.fill()
-      })
-
-      // Draw plane
-      ctx.save()
-      ctx.translate(x, y)
-      ctx.rotate(angle)
-
-      // Plane body
-      ctx.fillStyle = '#fff'
-      ctx.beginPath()
-      ctx.ellipse(0, 0, 25, 8, 0, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Wings
-      ctx.fillStyle = '#e0e0e0'
-      ctx.beginPath()
-      ctx.moveTo(-5, -2)
-      ctx.lineTo(10, -15)
-      ctx.lineTo(15, -15)
-      ctx.lineTo(5, -2)
-      ctx.closePath()
-      ctx.fill()
-
-      // Tail
-      ctx.fillStyle = '#f0f0f0'
-      ctx.beginPath()
-      ctx.moveTo(-20, 0)
-      ctx.lineTo(-30, -12)
-      ctx.lineTo(-25, -12)
-      ctx.lineTo(-15, 0)
-      ctx.closePath()
-      ctx.fill()
-
-      // Window
-      ctx.fillStyle = '#87CEEB'
-      ctx.beginPath()
-      ctx.arc(8, -2, 3, 0, Math.PI * 2)
-      ctx.fill()
-
-      ctx.restore()
-
-      animationId = requestAnimationFrame(animate)
+      // Phase 3: Landing (8-12s)
+      setTimeout(() => setPhase('landing'), 8000)
+      
+      // Repeat
+      setTimeout(cycle, 12000)
     }
-
-    animate()
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      cancelAnimationFrame(animationId)
-    }
+    
+    cycle()
   }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-full"
-      style={{ 
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 1
-      }}
-    />
+    <div 
+      ref={containerRef}
+      className="absolute inset-0 overflow-hidden pointer-events-none"
+      style={{ zIndex: 5 }}
+    >
+      {/* Moving Clouds */}
+      <div className="clouds-container">
+        <div className="cloud cloud-1">☁️</div>
+        <div className="cloud cloud-2">☁️</div>
+        <div className="cloud cloud-3">☁️</div>
+        <div className="cloud cloud-4">☁️</div>
+      </div>
+
+      {/* Airplane */}
+      <div 
+        ref={planeRef}
+        className={`airplane ${phase}`}
+      >
+        <svg 
+          viewBox="0 0 200 200" 
+          className="plane-svg"
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Main Body */}
+          <ellipse cx="100" cy="100" rx="80" ry="20" fill="#f0f0f0" stroke="#ccc" strokeWidth="1"/>
+          
+          {/* Cockpit */}
+          <ellipse cx="160" cy="95" rx="15" ry="12" fill="#87CEEB" stroke="#666" strokeWidth="1"/>
+          
+          {/* Left Wing */}
+          <path d="M80 85 L40 50 L60 50 L90 80 Z" fill="#e0e0e0" stroke="#bbb" strokeWidth="1"/>
+          
+          {/* Right Wing */}
+          <path d="M80 115 L40 150 L60 150 L90 120 Z" fill="#e0e0e0" stroke="#bbb" strokeWidth="1"/>
+          
+          {/* Tail */}
+          <path d="M30 95 L10 70 L25 70 L35 90 Z" fill="#d0d0d0" stroke="#aaa" strokeWidth="1"/>
+          
+          {/* Engine Left */}
+          <rect x="70" y="60" width="25" height="15" rx="5" fill="#ccc" stroke="#999"/>
+          
+          {/* Engine Right */}
+          <rect x="70" y="125" width="25" height="15" rx="5" fill="#ccc" stroke="#999"/>
+          
+          {/* Windows */}
+          <circle cx="120" cy="95" r="3" fill="#333"/>
+          <circle cx="135" cy="95" r="3" fill="#333"/>
+          <circle cx="150" cy="95" r="3" fill="#333"/>
+          
+          {/* Landing Gear - Front */}
+          <line x1="160" y1="115" x2="160" y2="130" stroke="#666" strokeWidth="2" className={`gear ${phase === 'flying' ? 'retracted' : ''}`}/>
+          <circle cx="160" cy="132" r="4" fill="#333" className={`gear ${phase === 'flying' ? 'retracted' : ''}`}/>
+          
+          {/* Landing Gear - Back */}
+          <line x1="50" y1="115" x2="50" y2="135" stroke="#666" strokeWidth="2" className={`gear ${phase === 'flying' ? 'retracted' : ''}`}/>
+          <circle cx="50" cy="137" r="5" fill="#333" className={`gear ${phase === 'flying' ? 'retracted' : ''}`}/>
+        </svg>
+      </div>
+
+      {/* Runway */}
+      <div className="runway">
+        <div className="runway-line"></div>
+        <div className="runway-line"></div>
+        <div className="runway-line"></div>
+      </div>
+    </div>
   )
 }
