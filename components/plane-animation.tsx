@@ -13,13 +13,13 @@ export function PlaneAnimation() {
     if (!ctx) return
 
     // Set canvas size
-    const resize = () => {
+    const handleResize = () => {
       canvas.width = canvas.offsetWidth * 2
       canvas.height = canvas.offsetHeight * 2
       ctx.scale(2, 2)
     }
-    resize()
-    window.addEventListener('resize', resize)
+    handleResize()
+    window.addEventListener('resize', handleResize)
 
     // Plane properties
     let x = -100
@@ -33,6 +33,8 @@ export function PlaneAnimation() {
     const trails: { x: number; y: number; alpha: number }[] = []
 
     // Animation loop
+    let animationId: number
+
     function animate() {
       if (!ctx || !canvas) return
       
@@ -57,7 +59,7 @@ export function PlaneAnimation() {
       if (trails.length > 50) trails.shift()
 
       // Draw trails
-      trails.forEach((trail, i) => {
+      trails.forEach((trail) => {
         trail.alpha -= 0.02
         ctx.beginPath()
         ctx.arc(trail.x, trail.y, 2, 0, Math.PI * 2)
@@ -104,21 +106,30 @@ export function PlaneAnimation() {
 
       ctx.restore()
 
-      requestAnimationFrame(animate)
+      animationId = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', handleResize)
+      cancelAnimationFrame(animationId)
     }
   }, [])
 
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.6 }}
+      className="w-full h-full"
+      style={{ 
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 1
+      }}
     />
   )
 }
