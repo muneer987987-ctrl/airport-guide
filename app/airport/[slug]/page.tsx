@@ -118,12 +118,17 @@ export default async function AirportPage({
       <div className="container-guide grid grid-cols-1 gap-10 py-10 lg:grid-cols-[2fr_1fr]">
         <div className="min-w-0">
           <GuideSection id="overview" title="Overview">
-            <p className="text-ink-700 dark:text-ink-200">{airport.overview}</p>
+            <div 
+  className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
+  dangerouslySetInnerHTML={{ __html: airport.overview }} 
+/>
             {airport.history && (
               <>
                 <h3 className="mb-2 mt-6 font-display text-base font-600">History</h3>
-                <p className="text-ink-700 dark:text-ink-200">{airport.history}</p>
-              </>
+<div 
+  className="prose prose-lg max-w-none text-ink-700 dark:text-ink-200" 
+  dangerouslySetInnerHTML={{ __html: airport.history }} 
+/>              </>
             )}
           </GuideSection>
 
