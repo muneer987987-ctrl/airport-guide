@@ -50,9 +50,9 @@ const config: Config = {
       },
     },
   },
-  plugins: [
+    plugins: [
     require('@tailwindcss/typography'),
-  // baqi plugins...],
+  ],
 };
 
 export default config;
