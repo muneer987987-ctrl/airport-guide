@@ -334,3 +334,10 @@ export default async function AirportPage({
     </>
   );
 }
+<div className="container-guide mt-10">
+  <RelatedAirports 
+    currentAirportId={airport.id} 
+    countryId={airport.countryId}
+    cityId={airport.cityId}
+  />
+</div>
