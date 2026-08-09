@@ -22,7 +22,6 @@ import { GuideSection } from "@/components/guide-section";
 import { AffiliateBlock } from "@/components/affiliate-block";
 import { AdSlot } from "@/components/ad-slot";
 import { ShareButtons } from "@/components/share-buttons";
-import { RelatedAirports } from "@/components/related-airports";
 import { CurrencyConverter } from "@/components/currency-converter";
 import { LocalTimeWidget } from "@/components/local-time-widget";
 import type { Metadata } from "next";
@@ -64,7 +63,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const airport = await getAirport(slug);
   if (!airport) return {};
-  return airportMetadata(airport as any);
+  return airportMetadata(airport);
 }
 
 export default async function AirportPage({
@@ -87,9 +86,9 @@ export default async function AirportPage({
     <>
       <script
         {...jsonLdScriptProps([
-          airportSchema(airport as any),
+          airportSchema(airport),
           breadcrumbSchema(breadcrumbItems),
-          faqSchema(airport.faqs as any),
+          faqSchema(airport.faqs),
         ])}
       />
       <Breadcrumbs items={breadcrumbItems} />
@@ -121,16 +120,16 @@ export default async function AirportPage({
       <div className="container-guide grid grid-cols-1 gap-10 py-10 lg:grid-cols-[2fr_1fr]">
         <div className="min-w-0">
           <GuideSection id="overview" title="Overview">
-            <div 
+            <div
               className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: airport.overview || "" }} 
+              dangerouslySetInnerHTML={{ __html: airport.overview || "" }}
             />
             {airport.history && (
               <>
                 <h3 className="mb-2 mt-6 font-display text-base font-600">History</h3>
-                <div 
-                  className="prose prose-lg max-w-none text-ink-700 dark:text-ink-200" 
-                  dangerouslySetInnerHTML={{ __html: airport.history }} 
+                <div
+                  className="prose prose-lg max-w-none text-ink-700 dark:text-ink-200"
+                  dangerouslySetInnerHTML={{ __html: airport.history }}
                 />
               </>
             )}
@@ -144,11 +143,11 @@ export default async function AirportPage({
           />
 
           <GuideSection id="terminals" title="Terminal Guide">
-            <TerminalGuide terminals={airport.terminals as any} />
+            <TerminalGuide terminals={airport.terminals} />
           </GuideSection>
 
           <GuideSection id="amenities" title="Amenities & Services">
-            <AmenityGrid amenities={airport.amenities as any} />
+            <AmenityGrid amenities={airport.amenities} />
           </GuideSection>
 
           <AffiliateBlock
@@ -163,7 +162,7 @@ export default async function AirportPage({
               <p className="text-sm text-ink-500">Lounge listings for this airport are coming soon.</p>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {(airport.lounges as any).map((l: any) => (
+                {airport.lounges.map((l) => (
                   <div key={l.id} className="card p-4">
                     <h3 className="font-display font-600">{l.name}</h3>
                     {l.terminal && <p className="text-xs text-ink-400">{l.terminal}</p>}
@@ -176,7 +175,7 @@ export default async function AirportPage({
 
           <GuideSection id="transfers" title="Transfers, Taxi & Public Transport">
             <ul className="space-y-3">
-              {(airport.transferOptions as any).map((t: any) => (
+              {airport.transferOptions.map((t) => (
                 <li key={t.id} className="card p-4 text-sm">
                   <span className="font-mono text-xs uppercase tracking-wide text-signal-dim dark:text-signal">
                     {t.type.replace("_", " ")}
@@ -195,7 +194,7 @@ export default async function AirportPage({
 
           <GuideSection id="parking" title="Parking">
             <ul className="space-y-3">
-              {(airport.parkingOptions as any).map((p: any) => (
+              {airport.parkingOptions.map((p) => (
                 <li key={p.id} className="card p-4 text-sm">
                   <span className="font-mono text-xs uppercase tracking-wide text-signal-dim dark:text-signal">
                     {p.type.replace("_", " ")}
@@ -211,7 +210,7 @@ export default async function AirportPage({
               <p className="text-sm text-ink-500">Hotel listings for this airport are coming soon.</p>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {(airport.hotels as any).map((h: any) => (
+                {airport.hotels.map((h) => (
                   <div key={h.id} className="card p-4 text-sm">
                     <p className="font-display font-600">{h.name}</p>
                     {h.distanceKm && <p className="text-ink-400">{h.distanceKm} km from terminal</p>}
@@ -224,7 +223,7 @@ export default async function AirportPage({
 
           <GuideSection id="layover" title="Layover & Transit Guide">
             <p className="text-sm text-ink-600 dark:text-ink-300">
-              {(airport.layoverGuide as any)?.content ??
+              {airport.layoverGuide?.content ??
                 "Detailed layover guidance for this airport is being prepared. As a general rule, check your connection time against the airline's official minimum connection time for this airport before booking a tight transfer."}
             </p>
           </GuideSection>
@@ -233,15 +232,15 @@ export default async function AirportPage({
             <div className="space-y-4 text-sm text-ink-600 dark:text-ink-300">
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Security: </span>
-                {(airport.securityRules as any)?.content ?? "Follow standard international carry-on liquid and electronics screening rules; check your departure country's current guidance before you travel."}
+                {airport.securityRules?.content ?? "Follow standard international carry-on liquid and electronics screening rules; check your departure country's current guidance before you travel."}
               </p>
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Baggage: </span>
-                {(airport.baggageRules as any)?.content ?? "Baggage allowance is set by your airline and fare class — check your ticket confirmation for specifics."}
+                {airport.baggageRules?.content ?? "Baggage allowance is set by your airline and fare class — check your ticket confirmation for specifics."}
               </p>
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Customs: </span>
-                {(airport.customsInfo as any)?.content ?? "Customs allowances vary by nationality and length of stay — check the destination country's official customs authority before you fly."}
+                {airport.customsInfo?.content ?? "Customs allowances vary by nationality and length of stay — check the destination country's official customs authority before you fly."}
               </p>
             </div>
           </GuideSection>
@@ -250,11 +249,11 @@ export default async function AirportPage({
             <div className="space-y-4 text-sm text-ink-600 dark:text-ink-300">
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Accessibility: </span>
-                {(airport.accessibility as any)?.content ?? "Contact the airport or your airline in advance to arrange wheelchair or mobility assistance."}
+                {airport.accessibility?.content ?? "Contact the airport or your airline in advance to arrange wheelchair or mobility assistance."}
               </p>
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Traveling with pets: </span>
-                {(airport.petTravelInfo as any)?.content ?? "Pet travel requirements vary by airline and destination — confirm documentation and carrier rules before booking."}
+                {airport.petTravelInfo?.content ?? "Pet travel requirements vary by airline and destination — confirm documentation and carrier rules before booking."}
               </p>
             </div>
           </GuideSection>
@@ -264,7 +263,7 @@ export default async function AirportPage({
               <p className="text-sm text-ink-500">Insider tips for this airport are coming soon.</p>
             ) : (
               <ul className="list-disc space-y-2 pl-5 text-sm text-ink-600 dark:text-ink-300">
-                {(airport.tips as any).map((t: any) => (
+                {airport.tips.map((t) => (
                   <li key={t.id}>{t.tip}</li>
                 ))}
               </ul>
@@ -272,7 +271,7 @@ export default async function AirportPage({
           </GuideSection>
 
           <GuideSection id="faqs" title="Frequently Asked Questions">
-            <FaqAccordion faqs={airport.faqs as any} />
+            <FaqAccordion faqs={airport.faqs} />
           </GuideSection>
         </div>
 
@@ -299,7 +298,7 @@ export default async function AirportPage({
             <div className="card p-5">
               <p className="eyebrow mb-3">Emergency contacts</p>
               <ul className="space-y-1.5 text-sm">
-                {(airport.emergencyContacts as any).map((c: any) => (
+                {airport.emergencyContacts.map((c) => (
                   <li key={c.id} className="flex justify-between">
                     <span className="text-ink-500">{c.label}</span>
                     <span className="font-mono">{c.phone}</span>
@@ -327,17 +326,6 @@ export default async function AirportPage({
       <div className="container-guide">
         <AdSlot slot="IN_CONTENT" />
       </div>
-
-      <div className="container-guide">
-        <RelatedAirports currentAirportId={airport.id} countryId={airport.countryId} />
-      </div>
     </>
   );
 }
-<div className="container-guide mt-10">
-  <RelatedAirports 
-    currentAirportId={airport.id} 
-    countryId={airport.countryId}
-    cityId={airport.cityId}
-  />
-</div>
