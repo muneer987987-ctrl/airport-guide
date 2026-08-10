@@ -56,8 +56,12 @@ async function getAirportRelated(airportId: string) {
   };
 }
 
-export default async function AirportPage({ params }: { params: { slug: string } }) {
-  const airport = await getAirportBasic(params.slug);
+// ✅ NEXT.JS 15 FIX: params is now a Promise
+export default async function AirportPage(props: any) {
+  const params = await props.params;
+  const slug = params.slug;
+
+  const airport = await getAirportBasic(slug);
   if (!airport) { notFound(); }
   const related = await getAirportRelated(airport.id);
 
