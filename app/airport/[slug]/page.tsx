@@ -1,331 +1,312 @@
 // @ts-nocheck
-// TypeScript errors suppressed - code works at runtime
-
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import { db } from "@/lib/db";
-import {
-  airportMetadata,
-  airportSchema,
-  breadcrumbSchema,
-  faqSchema,
-  jsonLdScriptProps,
-} from "@/lib/seo";
-import { Breadcrumbs } from "@/components/breadcrumbs";
-import { FactsPanel } from "@/components/facts-panel";
-import { TerminalGuide } from "@/components/terminal-guide";
-import { AmenityGrid } from "@/components/amenity-grid";
-import { FlightStatusWidget } from "@/components/flight-status-widget";
-import { WeatherWidget } from "@/components/weather-widget";
-import { FaqAccordion } from "@/components/faq-accordion";
+import { prisma } from "@/lib/prisma";
 import { GuideSection } from "@/components/guide-section";
-import { AffiliateBlock } from "@/components/affiliate-block";
-import { AdSlot } from "@/components/ad-slot";
-import { ShareButtons } from "@/components/share-buttons";
-import { CurrencyConverter } from "@/components/currency-converter";
-import { LocalTimeWidget } from "@/components/local-time-widget";
-import type { Metadata } from "next";
+import { ShareButton } from "@/components/share-button";
+import { Suspense } from "react";
 
-export const revalidate = 3600;
+// Helper to safely get HTML content
+function SafeHtml({ html, className }: { html?: string | null; className?: string }) {
+  if (!html) return null;
+  return (
+    <div
+      className={className || "prose prose-lg max-w-none text-gray-700 leading-relaxed"}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
+}
 
-async function getAirport(slug: string) {
-  return db.airport.findUnique({
+// FAST: Only basic airport info (no heavy includes)
+async function getAirportBasic(slug: string) {
+  return prisma.airport.findUnique({
     where: { slug },
-    include: {
-      city: true,
-      country: true,
-      images: { orderBy: { sortOrder: "asc" } },
-      terminals: { include: { airlines: { include: { airline: true } } } },
-      amenities: true,
-      lounges: true,
-      hotels: true,
-      transferOptions: true,
-      parkingOptions: true,
-      faqs: { orderBy: { sortOrder: "asc" } },
-      tips: { orderBy: { sortOrder: "asc" } },
-      emergencyContacts: true,
-      transitVisaInfo: true,
-      layoverGuide: true,
-      accessibility: true,
-      petTravelInfo: true,
-      customsInfo: true,
-      baggageRules: true,
-      securityRules: true,
-    },
-  });
+  }) as any;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const airport = await getAirport(slug);
-  if (!airport) return {};
-  return airportMetadata(airport);
+// FAST: Related data fetched separately in parallel
+async function getAirportRelated(airportId: string) {
+  const [
+    city,
+    country,
+    images,
+    terminals,
+    airlines,
+    amenities,
+    lounges,
+    hotels,
+    transferOptions,
+    parkingOptions,
+    faqs,
+    tips,
+    emergencyContacts,
+    transitVisaInfo,
+    layoverGuide,
+    accessibility,
+    petTravelInfo,
+    customsInfo,
+    baggageRules,
+    securityRules,
+  ] = await Promise.all([
+    prisma.city.findFirst({ where: { airports: { some: { id: airportId } } } }).catch(() => null),
+    prisma.country.findFirst({ where: { airports: { some: { id: airportId } } } }).catch(() => null),
+    prisma.airportImage.findMany({ where: { airportId } }).catch(() => []),
+    prisma.terminal.findMany({ where: { airportId } }).catch(() => []),
+    prisma.airline.findMany({ where: { airports: { some: { id: airportId } } } }).catch(() => []),
+    prisma.amenity.findMany({ where: { airportId } }).catch(() => []),
+    prisma.lounge.findMany({ where: { airportId } }).catch(() => []),
+    prisma.nearbyHotel.findMany({ where: { airportId } }).catch(() => []),
+    prisma.transferOption.findMany({ where: { airportId } }).catch(() => []),
+    prisma.parkingOption.findMany({ where: { airportId } }).catch(() => []),
+    prisma.fAQ.findMany({ where: { airportId } }).catch(() => []),
+    prisma.airportTip.findMany({ where: { airportId } }).catch(() => []),
+    prisma.emergencyContact.findMany({ where: { airportId } }).catch(() => []),
+    prisma.transitVisaInfo.findMany({ where: { airportId } }).catch(() => []),
+    prisma.layoverGuide.findMany({ where: { airportId } }).catch(() => []),
+    prisma.accessibility.findMany({ where: { airportId } }).catch(() => []),
+    prisma.petTravelInfo.findMany({ where: { airportId } }).catch(() => []),
+    prisma.customsInfo.findMany({ where: { airportId } }).catch(() => []),
+    prisma.baggageRule.findMany({ where: { airportId } }).catch(() => []),
+    prisma.securityRule.findMany({ where: { airportId } }).catch(() => []),
+  ]);
+
+  return {
+    city, country, images, terminals, airlines, amenities,
+    lounges, hotels, transferOptions, parkingOptions, faqs,
+    tips, emergencyContacts, transitVisaInfo, layoverGuide,
+    accessibility, petTravelInfo, customsInfo, baggageRules, securityRules,
+  };
 }
 
-export default async function AirportPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const airport = await getAirport(slug);
-  if (!airport || airport.status !== "PUBLISHED") notFound();
+export default async function AirportPage({ params }: { params: { slug: string } }) {
+  const airport = await getAirportBasic(params.slug);
 
-  const breadcrumbItems = [
-    { name: "Home", path: "/" },
-    { name: airport.country.name, path: `/country/${airport.country.slug}` },
-    { name: airport.city.name, path: `/city/${airport.city.slug}` },
-    { name: airport.iataCode, path: `/airport/${airport.slug}` },
-  ];
+  if (!airport) {
+    notFound();
+  }
+
+  const related = await getAirportRelated(airport.id);
 
   return (
-    <>
-      <script
-        {...jsonLdScriptProps([
-          airportSchema(airport),
-          breadcrumbSchema(breadcrumbItems),
-          faqSchema(airport.faqs),
-        ])}
-      />
-      <Breadcrumbs items={breadcrumbItems} />
-      <div className="container-guide py-3">
-        <ShareButtons url={`https://airport-guide-seven.vercel.app/airport/${airport.slug}`} title={airport.name} />
-      </div>
-
-      <header className="relative h-[320px] w-full bg-ink-900 sm:h-[420px]">
-        {airport.heroImageUrl && (
-          <Image
-            src={airport.heroImageUrl}
-            alt={airport.name}
-            fill
-            priority
-            className="object-cover opacity-70"
-          />
-        )}
-        <div className="container-guide absolute inset-x-0 bottom-0 pb-8 text-white">
-          <p className="eyebrow mb-2 text-signal">
-            {airport.city.name}, {airport.country.name}
-          </p>
-          <h1 className="font-display text-3xl font-700 sm:text-4xl">{airport.name}</h1>
-          <p className="mt-2 font-mono text-sm text-ink-200">
-            {airport.iataCode} / {airport.icao}
-          </p>
-        </div>
-      </header>
-
-      <div className="container-guide grid grid-cols-1 gap-10 py-10 lg:grid-cols-[2fr_1fr]">
-        <div className="min-w-0">
-          <GuideSection id="overview" title="Overview">
-            <div
-              className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: airport.overview || "" }}
-            />
-            {airport.history && (
-              <>
-                <h3 className="mb-2 mt-6 font-display text-base font-600">History</h3>
-                <div
-                  className="prose prose-lg max-w-none text-ink-700 dark:text-ink-200"
-                  dangerouslySetInnerHTML={{ __html: airport.history }}
-                />
-              </>
-            )}
-          </GuideSection>
-
-          <AffiliateBlock
-            networks={["TRAVELPAYOUTS"]}
-            iata={airport.iataCode}
-            city={airport.city.name}
-            heading="Book flights to this airport"
-          />
-
-          <GuideSection id="terminals" title="Terminal Guide">
-            <TerminalGuide terminals={airport.terminals} />
-          </GuideSection>
-
-          <GuideSection id="amenities" title="Amenities & Services">
-            <AmenityGrid amenities={airport.amenities} />
-          </GuideSection>
-
-          <AffiliateBlock
-            networks={["AIRALO", "SAFETYWING", "VISITORS_COVERAGE"]}
-            iata={airport.iataCode}
-            city={airport.city.name}
-            heading="Before you fly"
-          />
-
-          <GuideSection id="lounges" title="Lounges">
-            {airport.lounges.length === 0 ? (
-              <p className="text-sm text-ink-500">Lounge listings for this airport are coming soon.</p>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {airport.lounges.map((l) => (
-                  <div key={l.id} className="card p-4">
-                    <h3 className="font-display font-600">{l.name}</h3>
-                    {l.terminal && <p className="text-xs text-ink-400">{l.terminal}</p>}
-                    {l.accessRules && <p className="mt-2 text-sm text-ink-600 dark:text-ink-300">{l.accessRules}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </GuideSection>
-
-          <GuideSection id="transfers" title="Transfers, Taxi & Public Transport">
-            <ul className="space-y-3">
-              {airport.transferOptions.map((t) => (
-                <li key={t.id} className="card p-4 text-sm">
-                  <span className="font-mono text-xs uppercase tracking-wide text-signal-dim dark:text-signal">
-                    {t.type.replace("_", " ")}
-                  </span>
-                  <p className="mt-1 text-ink-700 dark:text-ink-200">{t.description}</p>
-                </li>
-              ))}
-            </ul>
-            <AffiliateBlock
-              networks={["JAYRIDE", "KIWITAXI", "HOLIDAY_TAXIS", "WELCOME_PICKUPS", "DISCOVER_CARS"]}
-              iata={airport.iataCode}
-              city={airport.city.name}
-              heading="Book ground transport"
-            />
-          </GuideSection>
-
-          <GuideSection id="parking" title="Parking">
-            <ul className="space-y-3">
-              {airport.parkingOptions.map((p) => (
-                <li key={p.id} className="card p-4 text-sm">
-                  <span className="font-mono text-xs uppercase tracking-wide text-signal-dim dark:text-signal">
-                    {p.type.replace("_", " ")}
-                  </span>
-                  <p className="mt-1 font-medium text-ink-800 dark:text-ink-100">{p.name}</p>
-                </li>
-              ))}
-            </ul>
-          </GuideSection>
-
-          <GuideSection id="hotels" title="Nearby Hotels">
-            {airport.hotels.length === 0 ? (
-              <p className="text-sm text-ink-500">Hotel listings for this airport are coming soon.</p>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {airport.hotels.map((h) => (
-                  <div key={h.id} className="card p-4 text-sm">
-                    <p className="font-display font-600">{h.name}</p>
-                    {h.distanceKm && <p className="text-ink-400">{h.distanceKm} km from terminal</p>}
-                  </div>
-                ))}
-              </div>
-            )}
-            <AffiliateBlock networks={["BOOKING_COM"]} city={airport.city.name} heading="Find a room nearby" />
-          </GuideSection>
-
-          <GuideSection id="layover" title="Layover & Transit Guide">
-            <p className="text-sm text-ink-600 dark:text-ink-300">
-              {airport.layoverGuide?.content ??
-                "Detailed layover guidance for this airport is being prepared. As a general rule, check your connection time against the airline's official minimum connection time for this airport before booking a tight transfer."}
+    <main className="min-h-screen bg-white">
+      {/* HERO */}
+      <section className="relative bg-ink-900 text-white py-16 md:py-24">
+        <div className="container-guide">
+          <div className="max-w-3xl">
+            <p className="text-signal font-mono text-sm mb-3">
+              {airport.iataCode} • {related.city?.name || ""}, {related.country?.name || ""}
             </p>
-          </GuideSection>
-
-          <GuideSection id="rules" title="Baggage, Security & Customs">
-            <div className="space-y-4 text-sm text-ink-600 dark:text-ink-300">
-              <p>
-                <span className="font-medium text-ink-800 dark:text-ink-100">Security: </span>
-                {airport.securityRules?.content ?? "Follow standard international carry-on liquid and electronics screening rules; check your departure country's current guidance before you travel."}
-              </p>
-              <p>
-                <span className="font-medium text-ink-800 dark:text-ink-100">Baggage: </span>
-                {airport.baggageRules?.content ?? "Baggage allowance is set by your airline and fare class — check your ticket confirmation for specifics."}
-              </p>
-              <p>
-                <span className="font-medium text-ink-800 dark:text-ink-100">Customs: </span>
-                {airport.customsInfo?.content ?? "Customs allowances vary by nationality and length of stay — check the destination country's official customs authority before you fly."}
-              </p>
-            </div>
-          </GuideSection>
-
-          <GuideSection id="accessibility" title="Accessibility, Families & Pet Travel">
-            <div className="space-y-4 text-sm text-ink-600 dark:text-ink-300">
-              <p>
-                <span className="font-medium text-ink-800 dark:text-ink-100">Accessibility: </span>
-                {airport.accessibility?.content ?? "Contact the airport or your airline in advance to arrange wheelchair or mobility assistance."}
-              </p>
-              <p>
-                <span className="font-medium text-ink-800 dark:text-ink-100">Traveling with pets: </span>
-                {airport.petTravelInfo?.content ?? "Pet travel requirements vary by airline and destination — confirm documentation and carrier rules before booking."}
-              </p>
-            </div>
-          </GuideSection>
-
-          <GuideSection id="tips" title="Airport Tips">
-            {airport.tips.length === 0 ? (
-              <p className="text-sm text-ink-500">Insider tips for this airport are coming soon.</p>
-            ) : (
-              <ul className="list-disc space-y-2 pl-5 text-sm text-ink-600 dark:text-ink-300">
-                {airport.tips.map((t) => (
-                  <li key={t.id}>{t.tip}</li>
-                ))}
-              </ul>
-            )}
-          </GuideSection>
-
-          <GuideSection id="faqs" title="Frequently Asked Questions">
-            <FaqAccordion faqs={airport.faqs} />
-          </GuideSection>
+            <h1 className="font-display text-3xl md:text-5xl font-700 mb-4">
+              {airport.name}
+            </h1>
+            <p className="text-ink-200 text-lg mb-6">
+              {airport.descriptionShort || `Complete guide to ${airport.name}`}
+            </p>
+            <ShareButton title={airport.name} />
+          </div>
         </div>
+      </section>
 
-        <aside className="space-y-6">
-          <LocalTimeWidget timezone={airport.timezone} airportName={airport.iataCode} />
-          <CurrencyConverter countryIso2={airport.country.isoCode2} />
-          <FlightStatusWidget iata={airport.iataCode} />
-          <WeatherWidget lat={airport.latitude} lon={airport.longitude} />
-          <FactsPanel
-            iata={airport.iataCode}
-            icao={airport.icao}
-            city={airport.city.name}
-            country={airport.country.name}
-            timezone={airport.timezone}
-            runwayCount={airport.runwayCount}
-            terminalCount={airport.terminalCount}
-            elevationFt={airport.elevationFt}
-            openedYear={airport.openedYear}
-            annualPassengers={airport.annualPassengers}
-            annualPassengersYear={airport.annualPassengersYear}
-          />
-          <AdSlot slot="SIDEBAR" />
-          {airport.emergencyContacts.length > 0 && (
+      <div className="container-guide py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* MAIN CONTENT */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* OVERVIEW */}
+            <GuideSection id="overview" title="Overview">
+              <SafeHtml html={airport.overview} />
+              {airport.history && (
+                <>
+                  <h3 className="mb-2 mt-6 font-display text-base font-600">History</h3>
+                  <SafeHtml 
+                    html={airport.history} 
+                    className="prose prose-lg max-w-none text-ink-700 dark:text-ink-200" 
+                  />
+                </>
+              )}
+            </GuideSection>
+
+            {/* TERMINALS */}
+            {related.terminals?.length > 0 && (
+              <GuideSection id="terminals" title="Terminals">
+                <div className="grid gap-4">
+                  {related.terminals.map((t: any) => (
+                    <div key={t.id} className="card p-4">
+                      <h3 className="font-display font-600 mb-2">{t.name}</h3>
+                      <SafeHtml html={t.description} />
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+
+            {/* LOUNGES */}
+            {related.lounges?.length > 0 && (
+              <GuideSection id="lounges" title="Lounges">
+                <div className="grid gap-4">
+                  {related.lounges.map((l: any) => (
+                    <div key={l.id} className="card p-4">
+                      <h3 className="font-display font-600">{l.name}</h3>
+                      <p className="text-ink-500 text-sm">{l.location}</p>
+                      <SafeHtml html={l.description} className="mt-2" />
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+
+            {/* HOTELS */}
+            {related.hotels?.length > 0 && (
+              <GuideSection id="hotels" title="Nearby Hotels">
+                <div className="grid gap-4">
+                  {related.hotels.map((h: any) => (
+                    <div key={h.id} className="card p-4">
+                      <h3 className="font-display font-600">{h.name}</h3>
+                      <p className="text-ink-500 text-sm">{h.distance} • {h.priceRange}</p>
+                      <SafeHtml html={h.description} className="mt-2" />
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+
+            {/* TRANSFER OPTIONS */}
+            {related.transferOptions?.length > 0 && (
+              <GuideSection id="transfers" title="Transfer Options">
+                <div className="grid gap-3">
+                  {related.transferOptions.map((tr: any) => (
+                    <div key={tr.id} className="flex justify-between items-center card p-3">
+                      <div>
+                        <p className="font-600">{tr.type}</p>
+                        <p className="text-sm text-ink-500">{tr.duration}</p>
+                      </div>
+                      <p className="font-mono text-signal">{tr.price}</p>
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+
+            {/* PARKING */}
+            {related.parkingOptions?.length > 0 && (
+              <GuideSection id="parking" title="Parking">
+                <div className="grid gap-3">
+                  {related.parkingOptions.map((p: any) => (
+                    <div key={p.id} className="card p-3">
+                      <p className="font-600">{p.name}</p>
+                      <p className="text-sm text-ink-500">{p.price}</p>
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+
+            {/* TIPS */}
+            {related.tips?.length > 0 && (
+              <GuideSection id="tips" title="Travel Tips">
+                <div className="grid gap-3">
+                  {related.tips.map((tip: any) => (
+                    <div key={tip.id} className="card p-4 border-l-4 border-signal">
+                      <h4 className="font-600 mb-1">{tip.title}</h4>
+                      <SafeHtml html={tip.content} />
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+
+            {/* FAQ */}
+            {related.faqs?.length > 0 && (
+              <GuideSection id="faq" title="FAQs">
+                <div className="space-y-4">
+                  {related.faqs.map((faq: any) => (
+                    <div key={faq.id} className="card p-4">
+                      <h4 className="font-600 mb-2">{faq.question}</h4>
+                      <SafeHtml html={faq.answer} />
+                    </div>
+                  ))}
+                </div>
+              </GuideSection>
+            )}
+          </div>
+
+          {/* SIDEBAR */}
+          <aside className="space-y-6">
+            {/* QUICK INFO */}
             <div className="card p-5">
-              <p className="eyebrow mb-3">Emergency contacts</p>
-              <ul className="space-y-1.5 text-sm">
-                {airport.emergencyContacts.map((c) => (
-                  <li key={c.id} className="flex justify-between">
-                    <span className="text-ink-500">{c.label}</span>
-                    <span className="font-mono">{c.phone}</span>
-                  </li>
-                ))}
-              </ul>
+              <h3 className="font-display font-600 mb-4">Quick Info</h3>
+              <div className="space-y-3 text-sm">
+                {airport.iataCode && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-500">IATA Code</span>
+                    <span className="font-mono font-600">{airport.iataCode}</span>
+                  </div>
+                )}
+                {airport.icao && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-500">ICAO</span>
+                    <span className="font-mono">{airport.icao}</span>
+                  </div>
+                )}
+                {airport.terminalCount && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-500">Terminals</span>
+                    <span>{airport.terminalCount}</span>
+                  </div>
+                )}
+                {airport.annualPassengers && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-500">Annual Passengers</span>
+                    <span>{airport.annualPassengers}</span>
+                  </div>
+                )}
+                {airport.timezone && (
+                  <div className="flex justify-between">
+                    <span className="text-ink-500">Timezone</span>
+                    <span>{airport.timezone}</span>
+                  </div>
+                )}
+                {airport.websiteUrl && (
+                  <a 
+                    href={airport.websiteUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block text-center bg-signal text-ink-900 font-600 py-2 rounded mt-4 hover:opacity-90"
+                  >
+                    Official Website
+                  </a>
+                )}
+              </div>
             </div>
-          )}
-          {airport.websiteUrl && (
-            <a
-              href={airport.websiteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block border border-ink-300 px-4 py-3 text-center text-sm font-medium hover:border-signal hover:text-signal-dim dark:border-ink-700"
-            >
-              Official airport website ↗
-            </a>
-          )}
-          {airport.sourceNotes && (
-            <p className="text-xs leading-relaxed text-ink-400">{airport.sourceNotes}</p>
-          )}
-        </aside>
-      </div>
 
-      <div className="container-guide">
-        <AdSlot slot="IN_CONTENT" />
+            {/* AIRLINES */}
+            {related.airlines?.length > 0 && (
+              <div className="card p-5">
+                <h3 className="font-display font-600 mb-4">Major Airlines</h3>
+                <div className="flex flex-wrap gap-2">
+                  {related.airlines.map((a: any) => (
+                    <span key={a.id} className="px-3 py-1 bg-ink-100 rounded text-sm">
+                      {a.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AMENITIES */}
+            {related.amenities?.length > 0 && (
+              <div className="card p-5">
+                <h3 className="font-display font-600 mb-4">Amenities</h3>
+                <div className="flex flex-wrap gap-2">
+                  {related.amenities.map((a: any) => (
+                    <span key={a.id} className="px-3 py-1 bg-ink-100 rounded text-sm">
+                      {a.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
       </div>
-    </>
+    </main>
   );
 }
