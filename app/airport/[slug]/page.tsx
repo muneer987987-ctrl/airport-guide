@@ -4,11 +4,13 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export default async function AirportPage(props: {
-  params: Promise<{ slug: string }>
+// ✅ NEXT.JS 15 EXACT FORMAT — params is a Promise
+export default async function AirportPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> 
 }) {
-  const params = await props.params;
-  const slug = params.slug;
+  const { slug } = await params;
 
   // ORIGINAL QUERY — jo pehle kaam kar rahi thi
   const airport = await prisma.airport.findUnique({
@@ -64,7 +66,7 @@ export default async function AirportPage(props: {
           {/* MAIN CONTENT */}
           <div className="lg:col-span-2 space-y-8">
 
-            {/* OVERVIEW — BAS YEH CHANGE HAI */}
+            {/* OVERVIEW — BAS YEH 2 LINES CHANGE HAIN */}
             <section id="overview" className="scroll-mt-24">
               <h2 className="font-display text-2xl font-700 mb-4 pb-2 border-b border-ink-200">Overview</h2>
               <div 
