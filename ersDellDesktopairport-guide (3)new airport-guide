@@ -1,0 +1,15 @@
+[33md918757[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: Next.js 15 exact params format + html rendering
+[33m7baa260[m fix: original query + html rendering + next15 types
+[33m1ec862b[m fix: full airport page with all data sections
+[33m1762d54[m fix: Next.js 15 params promise type
+[33m6220ac9[m fix: use Link component for internal navigation
+[33m1012e4e[m fix: zero-import fast airport page
+[33mbb4419f[m fix: split prisma queries for fast loading
+[33m1116f45[m fix: html rendering with ts-nocheck
+[33m4099a46[m fix: related airports component - remove select
+[33mf945a46[m feat: dynamic related airports component
+[33mdb2272e[m fix: html rendering + robots.txt
+[33m83222b8[m fix: move @tailwindcss/typography to dependencies
+[33m2273b41[m fix: tailwind config syntax error
+[33md57ca1d[m fix: render HTML overview and history properly
+[33m3e1f8c0[m Fix: Escape quotes in testimonial-card
