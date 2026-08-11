@@ -54,19 +54,6 @@ async function getAirport(slug: string) {
   });
 }
 
-// ✅ FREE FIX: Build time pe saare pages generate karo
-export async function generateStaticParams() {
-  try {
-    const airports = await db.airport.findMany({
-      select: { slug: true },
-      take: 100,
-    });
-    return airports.map((a) => ({ slug: a.slug }));
-  } catch {
-    return [];
-  }
-}
-
 export async function generateMetadata({
   params,
 }: {
