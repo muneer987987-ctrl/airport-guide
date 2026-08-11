@@ -25,57 +25,33 @@ import { CurrencyConverter } from "@/components/currency-converter";
 import { LocalTimeWidget } from "@/components/local-time-widget";
 import type { Metadata } from "next";
 
-export const revalidate = 3600;
+export const revalidate = 3600; // ISR — hourly regeneration keeps 10k+ pages fast without full rebuilds
 
-// FAST: Basic airport only (no includes)
-async function getAirportBasic(slug: string) {
+async function getAirport(slug: string) {
   return db.airport.findUnique({
     where: { slug },
-  }) as any;
-}
-
-// FAST: City & Country only
-async function getCityCountry(cityId: string, countryId: string) {
-  const [city, country] = await Promise.all([
-    db.city.findUnique({ where: { id: cityId } }).catch(() => null),
-    db.country.findUnique({ where: { id: countryId } }).catch(() => null),
-  ]);
-  return { city, country };
-}
-
-// FAST: Related data in parallel
-async function getAirportRelated(airportId: string) {
-  const [
-    images, terminals, amenities, lounges, hotels,
-    transferOptions, parkingOptions, faqs, tips,
-    emergencyContacts, transitVisaInfo, layoverGuide,
-    accessibility, petTravelInfo, customsInfo, baggageRules, securityRules,
-  ] = await Promise.all([
-    db.airportImage.findMany({ where: { airportId }, orderBy: { sortOrder: "asc" } }).catch(() => []),
-    db.terminal.findMany({ where: { airportId }, include: { airlines: { include: { airline: true } } } }).catch(() => []),
-    db.amenity.findMany({ where: { airportId } }).catch(() => []),
-    db.lounge.findMany({ where: { airportId } }).catch(() => []),
-    db.nearbyHotel.findMany({ where: { airportId } }).catch(() => []),
-    db.transferOption.findMany({ where: { airportId } }).catch(() => []),
-    db.parkingOption.findMany({ where: { airportId } }).catch(() => []),
-    db.fAQ.findMany({ where: { airportId }, orderBy: { sortOrder: "asc" } }).catch(() => []),
-    db.airportTip.findMany({ where: { airportId }, orderBy: { sortOrder: "asc" } }).catch(() => []),
-    db.emergencyContact.findMany({ where: { airportId } }).catch(() => []),
-    db.transitVisaInfo.findMany({ where: { airportId } }).catch(() => []),
-    db.layoverGuide.findMany({ where: { airportId } }).catch(() => []),
-    db.accessibility.findMany({ where: { airportId } }).catch(() => []),
-    db.petTravelInfo.findMany({ where: { airportId } }).catch(() => []),
-    db.customsInfo.findMany({ where: { airportId } }).catch(() => []),
-    db.baggageRule.findMany({ where: { airportId } }).catch(() => []),
-    db.securityRule.findMany({ where: { airportId } }).catch(() => []),
-  ]);
-
-  return {
-    images, terminals, amenities, lounges, hotels,
-    transferOptions, parkingOptions, faqs, tips,
-    emergencyContacts, transitVisaInfo, layoverGuide,
-    accessibility, petTravelInfo, customsInfo, baggageRules, securityRules,
-  };
+    include: {
+      city: true,
+      country: true,
+      images: { orderBy: { sortOrder: "asc" } },
+      terminals: { include: { airlines: { include: { airline: true } } } },
+      amenities: true,
+      lounges: true,
+      hotels: true,
+      transferOptions: true,
+      parkingOptions: true,
+      faqs: { orderBy: { sortOrder: "asc" } },
+      tips: { orderBy: { sortOrder: "asc" } },
+      emergencyContacts: true,
+      transitVisaInfo: true,
+      layoverGuide: true,
+      accessibility: true,
+      petTravelInfo: true,
+      customsInfo: true,
+      baggageRules: true,
+      securityRules: true,
+    },
+  });
 }
 
 export async function generateMetadata({
@@ -84,7 +60,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const airport = await getAirportBasic(slug);
+  const airport = await getAirport(slug);
   if (!airport) return {};
   return airportMetadata(airport);
 }
@@ -95,39 +71,23 @@ export default async function AirportPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  // Step 1: Basic airport
-  const airport = await getAirportBasic(slug);
+  const airport = await getAirport(slug);
   if (!airport || airport.status !== "PUBLISHED") notFound();
-
-  // Step 2: City & Country
-  const { city, country } = await getCityCountry(airport.cityId, airport.countryId);
-
-  // Step 3: All related data (parallel)
-  const related = await getAirportRelated(airport.id);
-
-  // Merge into airport object for original component compatibility
-  const fullAirport = {
-    ...airport,
-    city,
-    country,
-    ...related,
-  };
 
   const breadcrumbItems = [
     { name: "Home", path: "/" },
-    { name: country?.name || "", path: `/country/${country?.slug || ""}` },
-    { name: city?.name || "", path: `/city/${city?.slug || ""}` },
-    { name: airport.iata || airport.iataCode || "", path: `/airport/${airport.slug}` },
+    { name: airport.country.name, path: `/country/${airport.country.slug}` },
+    { name: airport.city.name, path: `/city/${airport.city.slug}` },
+    { name: airport.iata, path: `/airport/${airport.slug}` },
   ];
 
   return (
     <>
       <script
         {...jsonLdScriptProps([
-          airportSchema(fullAirport),
+          airportSchema(airport),
           breadcrumbSchema(breadcrumbItems),
-          faqSchema(fullAirport.faqs),
+          faqSchema(airport.faqs),
         ])}
       />
       <Breadcrumbs items={breadcrumbItems} />
@@ -147,11 +107,11 @@ export default async function AirportPage({
         )}
         <div className="container-guide absolute inset-x-0 bottom-0 pb-8 text-white">
           <p className="eyebrow mb-2 text-signal">
-            {city?.name || ""}, {country?.name || ""}
+            {airport.city.name}, {airport.country.name}
           </p>
           <h1 className="font-display text-3xl font-700 sm:text-4xl">{airport.name}</h1>
           <p className="mt-2 font-mono text-sm text-ink-200">
-            {airport.iata || airport.iataCode || ""} / {airport.icao || ""}
+            {airport.iata} / {airport.icao}
           </p>
         </div>
       </header>
@@ -161,7 +121,7 @@ export default async function AirportPage({
           <GuideSection id="overview" title="Overview">
             <div 
               className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: airport.overview || "" }} 
+              dangerouslySetInnerHTML={{ __html: airport.overview }} 
             />
             {airport.history && (
               <>
@@ -176,32 +136,32 @@ export default async function AirportPage({
 
           <AffiliateBlock
             networks={["TRAVELPAYOUTS"]}
-            iata={airport.iata || airport.iataCode || ""}
-            city={city?.name || ""}
+            iata={airport.iata}
+            city={airport.city.name}
             heading="Book flights to this airport"
           />
 
           <GuideSection id="terminals" title="Terminal Guide">
-            <TerminalGuide terminals={fullAirport.terminals} />
+            <TerminalGuide terminals={airport.terminals} />
           </GuideSection>
 
           <GuideSection id="amenities" title="Amenities & Services">
-            <AmenityGrid amenities={fullAirport.amenities} />
+            <AmenityGrid amenities={airport.amenities} />
           </GuideSection>
 
           <AffiliateBlock
             networks={["AIRALO", "SAFETYWING", "VISITORS_COVERAGE"]}
-            iata={airport.iata || airport.iataCode || ""}
-            city={city?.name || ""}
+            iata={airport.iata}
+            city={airport.city.name}
             heading="Before you fly"
           />
 
           <GuideSection id="lounges" title="Lounges">
-            {fullAirport.lounges.length === 0 ? (
+            {airport.lounges.length === 0 ? (
               <p className="text-sm text-ink-500">Lounge listings for this airport are coming soon.</p>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {fullAirport.lounges.map((l: any) => (
+                {airport.lounges.map((l) => (
                   <div key={l.id} className="card p-4">
                     <h3 className="font-display font-600">{l.name}</h3>
                     {l.terminal && <p className="text-xs text-ink-400">{l.terminal}</p>}
@@ -214,10 +174,10 @@ export default async function AirportPage({
 
           <GuideSection id="transfers" title="Transfers, Taxi & Public Transport">
             <ul className="space-y-3">
-              {fullAirport.transferOptions.map((t: any) => (
+              {airport.transferOptions.map((t) => (
                 <li key={t.id} className="card p-4 text-sm">
                   <span className="font-mono text-xs uppercase tracking-wide text-signal-dim dark:text-signal">
-                    {t.type?.replace("_", " ") || ""}
+                    {t.type.replace("_", " ")}
                   </span>
                   <p className="mt-1 text-ink-700 dark:text-ink-200">{t.description}</p>
                 </li>
@@ -225,18 +185,18 @@ export default async function AirportPage({
             </ul>
             <AffiliateBlock
               networks={["JAYRIDE", "KIWITAXI", "HOLIDAY_TAXIS", "WELCOME_PICKUPS", "DISCOVER_CARS"]}
-              iata={airport.iata || airport.iataCode || ""}
-              city={city?.name || ""}
+              iata={airport.iata}
+              city={airport.city.name}
               heading="Book ground transport"
             />
           </GuideSection>
 
           <GuideSection id="parking" title="Parking">
             <ul className="space-y-3">
-              {fullAirport.parkingOptions.map((p: any) => (
+              {airport.parkingOptions.map((p) => (
                 <li key={p.id} className="card p-4 text-sm">
                   <span className="font-mono text-xs uppercase tracking-wide text-signal-dim dark:text-signal">
-                    {p.type?.replace("_", " ") || ""}
+                    {p.type.replace("_", " ")}
                   </span>
                   <p className="mt-1 font-medium text-ink-800 dark:text-ink-100">{p.name}</p>
                 </li>
@@ -245,11 +205,11 @@ export default async function AirportPage({
           </GuideSection>
 
           <GuideSection id="hotels" title="Nearby Hotels">
-            {fullAirport.hotels.length === 0 ? (
+            {airport.hotels.length === 0 ? (
               <p className="text-sm text-ink-500">Hotel listings for this airport are coming soon.</p>
             ) : (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {fullAirport.hotels.map((h: any) => (
+                {airport.hotels.map((h) => (
                   <div key={h.id} className="card p-4 text-sm">
                     <p className="font-display font-600">{h.name}</p>
                     {h.distanceKm && <p className="text-ink-400">{h.distanceKm} km from terminal</p>}
@@ -257,12 +217,12 @@ export default async function AirportPage({
                 ))}
               </div>
             )}
-            <AffiliateBlock networks={["BOOKING_COM"]} city={city?.name || ""} heading="Find a room nearby" />
+            <AffiliateBlock networks={["BOOKING_COM"]} city={airport.city.name} heading="Find a room nearby" />
           </GuideSection>
 
           <GuideSection id="layover" title="Layover & Transit Guide">
             <p className="text-sm text-ink-600 dark:text-ink-300">
-              {fullAirport.layoverGuide?.[0]?.content ??
+              {airport.layoverGuide?.content ??
                 "Detailed layover guidance for this airport is being prepared. As a general rule, check your connection time against the airline's official minimum connection time for this airport before booking a tight transfer."}
             </p>
           </GuideSection>
@@ -271,15 +231,15 @@ export default async function AirportPage({
             <div className="space-y-4 text-sm text-ink-600 dark:text-ink-300">
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Security: </span>
-                {fullAirport.securityRules?.[0]?.content ?? "Follow standard international carry-on liquid and electronics screening rules; check your departure country's current guidance before you travel."}
+                {airport.securityRules?.content ?? "Follow standard international carry-on liquid and electronics screening rules; check your departure country's current guidance before you travel."}
               </p>
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Baggage: </span>
-                {fullAirport.baggageRules?.[0]?.content ?? "Baggage allowance is set by your airline and fare class — check your ticket confirmation for specifics."}
+                {airport.baggageRules?.content ?? "Baggage allowance is set by your airline and fare class — check your ticket confirmation for specifics."}
               </p>
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Customs: </span>
-                {fullAirport.customsInfo?.[0]?.content ?? "Customs allowances vary by nationality and length of stay — check the destination country's official customs authority before you fly."}
+                {airport.customsInfo?.content ?? "Customs allowances vary by nationality and length of stay — check the destination country's official customs authority before you fly."}
               </p>
             </div>
           </GuideSection>
@@ -288,21 +248,21 @@ export default async function AirportPage({
             <div className="space-y-4 text-sm text-ink-600 dark:text-ink-300">
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Accessibility: </span>
-                {fullAirport.accessibility?.[0]?.content ?? "Contact the airport or your airline in advance to arrange wheelchair or mobility assistance."}
+                {airport.accessibility?.content ?? "Contact the airport or your airline in advance to arrange wheelchair or mobility assistance."}
               </p>
               <p>
                 <span className="font-medium text-ink-800 dark:text-ink-100">Traveling with pets: </span>
-                {fullAirport.petTravelInfo?.[0]?.content ?? "Pet travel requirements vary by airline and destination — confirm documentation and carrier rules before booking."}
+                {airport.petTravelInfo?.content ?? "Pet travel requirements vary by airline and destination — confirm documentation and carrier rules before booking."}
               </p>
             </div>
           </GuideSection>
 
           <GuideSection id="tips" title="Airport Tips">
-            {fullAirport.tips.length === 0 ? (
+            {airport.tips.length === 0 ? (
               <p className="text-sm text-ink-500">Insider tips for this airport are coming soon.</p>
             ) : (
               <ul className="list-disc space-y-2 pl-5 text-sm text-ink-600 dark:text-ink-300">
-                {fullAirport.tips.map((t: any) => (
+                {airport.tips.map((t) => (
                   <li key={t.id}>{t.tip}</li>
                 ))}
               </ul>
@@ -310,20 +270,20 @@ export default async function AirportPage({
           </GuideSection>
 
           <GuideSection id="faqs" title="Frequently Asked Questions">
-            <FaqAccordion faqs={fullAirport.faqs} />
+            <FaqAccordion faqs={airport.faqs} />
           </GuideSection>
         </div>
 
         <aside className="space-y-6">
-          <LocalTimeWidget timezone={airport.timezone} airportName={airport.iata || airport.iataCode || ""} />
-          <CurrencyConverter countryIso2={country?.isoCode2 || ""} />
-          <FlightStatusWidget iata={airport.iata || airport.iataCode || ""} />
+          <LocalTimeWidget timezone={airport.timezone} airportName={airport.iata} />
+          <CurrencyConverter countryIso2={airport.country.isoCode2} />
+          <FlightStatusWidget iata={airport.iata} />
           <WeatherWidget lat={airport.latitude} lon={airport.longitude} />
           <FactsPanel
-            iata={airport.iata || airport.iataCode || ""}
-            icao={airport.icao || ""}
-            city={city?.name || ""}
-            country={country?.name || ""}
+            iata={airport.iata}
+            icao={airport.icao}
+            city={airport.city.name}
+            country={airport.country.name}
             timezone={airport.timezone}
             runwayCount={airport.runwayCount}
             terminalCount={airport.terminalCount}
@@ -333,11 +293,11 @@ export default async function AirportPage({
             annualPassengersYear={airport.annualPassengersYear}
           />
           <AdSlot slot="SIDEBAR" />
-          {fullAirport.emergencyContacts.length > 0 && (
+          {airport.emergencyContacts.length > 0 && (
             <div className="card p-5">
               <p className="eyebrow mb-3">Emergency contacts</p>
               <ul className="space-y-1.5 text-sm">
-                {fullAirport.emergencyContacts.map((c: any) => (
+                {airport.emergencyContacts.map((c) => (
                   <li key={c.id} className="flex justify-between">
                     <span className="text-ink-500">{c.label}</span>
                     <span className="font-mono">{c.phone}</span>
