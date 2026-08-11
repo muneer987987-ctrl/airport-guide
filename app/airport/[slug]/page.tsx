@@ -19,7 +19,7 @@ import { GuideSection } from "@/components/guide-section";
 import { AffiliateBlock } from "@/components/affiliate-block";
 import { AdSlot } from "@/components/ad-slot";
 import { ShareButtons } from "@/components/share-buttons";
-import { RelatedAirports } from "@/components/related-airports";
+import  RelatedAirports  from "@/components/related-airports";
 import { CurrencyConverter } from "@/components/currency-converter";
 import { LocalTimeWidget } from "@/components/local-time-widget";
 import type { Metadata } from "next";
