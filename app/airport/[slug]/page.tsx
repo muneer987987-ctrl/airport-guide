@@ -25,7 +25,7 @@ import { CurrencyConverter } from "@/components/currency-converter";
 import { LocalTimeWidget } from "@/components/local-time-widget";
 import type { Metadata } from "next";
 
-export const revalidate = 3600; // ISR — hourly regeneration keeps 10k+ pages fast without full rebuilds
+export const revalidate = 3600;
 
 async function getAirport(slug: string) {
   return db.airport.findUnique({
@@ -52,6 +52,19 @@ async function getAirport(slug: string) {
       securityRules: true,
     },
   });
+}
+
+// ✅ FREE FIX: Build time pe saare pages generate karo
+export async function generateStaticParams() {
+  try {
+    const airports = await db.airport.findMany({
+      select: { slug: true },
+      take: 100,
+    });
+    return airports.map((a) => ({ slug: a.slug }));
+  } catch {
+    return [];
+  }
 }
 
 export async function generateMetadata({
