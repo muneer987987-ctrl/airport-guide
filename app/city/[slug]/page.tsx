@@ -1,3 +1,10 @@
+export const metadata = {
+  title: "Airports in City Name",
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { AirportCard } from "@/components/airport-card";
