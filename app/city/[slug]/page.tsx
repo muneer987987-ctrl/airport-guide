@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 export const metadata = {
   title: "Airports in City Name",
   robots: {
